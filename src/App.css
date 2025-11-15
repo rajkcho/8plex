@@ -94,11 +94,21 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .scenario-input-row button:disabled {
   background: #94a3b8;
   cursor: not-allowed;
+}
+
+.scenario-save-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  object-fit: contain;
+  display: block;
 }
 
 .scenario-list {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
+import diskIcon from '../disk.png';
 import './App.css';
 import {
   BarChart,
@@ -515,8 +516,17 @@ function App() {
                   }
                 }}
               />
-              <button type="submit" disabled={isSavingScenario || !scenarioName.trim()}>
-                {isSavingScenario ? 'Saving...' : 'Save Scenario'}
+              <button
+                type="submit"
+                disabled={isSavingScenario || !scenarioName.trim()}
+                aria-label="Save scenario"
+                title="Save scenario"
+              >
+                {isSavingScenario ? (
+                  'Saving...'
+                ) : (
+                  <img src={diskIcon} alt="" aria-hidden="true" className="scenario-save-icon" />
+                )}
               </button>
             </div>
           </form>
