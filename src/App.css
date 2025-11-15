@@ -348,6 +348,11 @@ input[type='number'] {
   padding: 0.5rem 0.75rem 0.5rem 2.1rem;
 }
 
+.expense-item .percent-input input {
+  border: none;
+  padding: 0;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

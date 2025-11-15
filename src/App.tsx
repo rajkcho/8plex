@@ -35,7 +35,7 @@ const sanitizeExpenseLabel = (label: string): string =>
 
 const normalizeExpenseLabel = (label: string): string => sanitizeExpenseLabel(label).toLowerCase();
 
-const percentageExpenseLabels = new Set(['vacancy and bad debt']);
+const percentageExpenseLabels = new Set(['management & salaries', 'vacancy and bad debt']);
 
 const computeGrossRentAnnual = (assumptions: Assumptions): number => {
   const unitMix = assumptions.unitMix ?? [];
