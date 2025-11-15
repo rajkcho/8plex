@@ -408,6 +408,9 @@ function App() {
   const [scenarioError, setScenarioError] = useState<string | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const [selectedMarketCity, setSelectedMarketCity] = useState<string>(marketRentData[0]?.city ?? '');
+  const [newExpenseLabel, setNewExpenseLabel] = useState('');
+  const [newExpenseValue, setNewExpenseValue] = useState('');
+  const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
 
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
@@ -620,6 +623,35 @@ function App() {
       ...prev,
       [normalizedLabel]: percentValue,
     }));
+  };
+
+  const handleAddOperatingExpense = () => {
+    const trimmedLabel = newExpenseLabel.trim();
+    if (!trimmedLabel) {
+      setNewExpenseError('Enter an expense name.');
+      return;
+    }
+    const normalizedLabel = normalizeExpenseLabel(trimmedLabel);
+    const existingKey = Object.keys(assumptions.operatingExpenses ?? {}).find(
+      (key) => normalizeExpenseLabel(key) === normalizedLabel,
+    );
+    if (existingKey) {
+      setNewExpenseError('This expense already exists.');
+      return;
+    }
+    const amountValue = parseCurrencyInputValue(newExpenseValue);
+    setAssumptions((prev) => {
+      const updated = { ...(prev.operatingExpenses ?? {}) };
+      updated[trimmedLabel] = amountValue;
+      return {
+        ...prev,
+        operatingExpenses: updated,
+        operatingExpenseTotal: Object.values(updated).reduce((sum, val) => sum + val, 0),
+      };
+    });
+    setNewExpenseLabel('');
+    setNewExpenseValue('');
+    setNewExpenseError(null);
   };
 
   const updateUnitMixEntry = (unitIndex: number, updates: Partial<UnitAssumption>) => {
@@ -1235,6 +1267,47 @@ function App() {
                   </div>
                 );
               })}
+            </div>
+            <div className="expense-add">
+              <p className="expense-add-title">Add operating expense</p>
+              <div className="expense-add-fields">
+                <label>
+                  Expense Name
+                  <input
+                    type="text"
+                    value={newExpenseLabel}
+                    onChange={(event) => {
+                      setNewExpenseLabel(event.target.value);
+                      if (newExpenseError) {
+                        setNewExpenseError(null);
+                      }
+                    }}
+                    placeholder="e.g. Landscaping"
+                  />
+                </label>
+                <label>
+                  Annual Amount
+                  <div className="currency-input">
+                    <span className="prefix">$</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={newExpenseValue}
+                      onChange={(event) => {
+                        setNewExpenseValue(event.target.value);
+                        if (newExpenseError) {
+                          setNewExpenseError(null);
+                        }
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
+                </label>
+              </div>
+              <button type="button" className="add-unit-button" onClick={handleAddOperatingExpense}>
+                + Add expense
+              </button>
+              {newExpenseError && <p className="scenario-error">{newExpenseError}</p>}
             </div>
           </div>
         </div>
