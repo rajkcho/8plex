@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import './App.css';
 import {
@@ -15,7 +15,8 @@ import {
 } from 'recharts';
 import type { TooltipProps, LabelProps } from 'recharts';
 
-const baselineMetrics = calculateMetrics(loadBaselineAssumptions());
+const baselineAssumptions = loadBaselineAssumptions();
+const baselineMetrics = calculateMetrics(baselineAssumptions);
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -28,6 +29,34 @@ const percentFormatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+
+const sanitizeExpenseLabel = (label: string): string =>
+  label.replace(/@\s*\d+%/gi, '').replace(/\s+\d+%$/gi, '').replace(/\s{2,}/g, ' ').trim();
+
+const normalizeExpenseLabel = (label: string): string => sanitizeExpenseLabel(label).toLowerCase();
+
+const percentageExpenseLabels = new Set(['management & salaries', 'vacancy and bad debt']);
+
+const computeGrossRentAnnual = (assumptions: Assumptions): number => {
+  const unitMix = assumptions.unitMix ?? [];
+  const monthlyRent = unitMix.reduce((sum, unit) => sum + unit.units * unit.rent, 0);
+  return monthlyRent * 12;
+};
+
+const deriveInitialPercentExpenses = (): Record<string, number> => {
+  const result: Record<string, number> = {};
+  const grossRentAnnual = computeGrossRentAnnual(baselineAssumptions);
+  if (grossRentAnnual <= 0) {
+    return result;
+  }
+  Object.entries(baselineAssumptions.operatingExpenses ?? {}).forEach(([label, amount]) => {
+    const normalized = normalizeExpenseLabel(label);
+    if (percentageExpenseLabels.has(normalized)) {
+      result[normalized] = Number(((amount / grossRentAnnual) * 100).toFixed(2));
+    }
+  });
+  return result;
+};
 
 type MetricCard = {
   label: string;
@@ -83,6 +112,7 @@ const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
 
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
+  const [percentExpenseValues, setPercentExpenseValues] = useState<Record<string, number>>(() => deriveInitialPercentExpenses());
 
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
@@ -102,6 +132,44 @@ function App() {
 
     return { waterfallData: data, waterfallDomain: domain };
   }, [metrics]);
+
+  useEffect(() => {
+    if (!Object.keys(percentExpenseValues).length || metrics.grossRentAnnual <= 0) {
+      return;
+    }
+
+    setAssumptions((prev) => {
+      const expenses = { ...(prev.operatingExpenses ?? {}) };
+      let changed = false;
+
+      Object.entries(percentExpenseValues).forEach(([normalized, percent]) => {
+        const expenseKey = Object.keys(expenses).find(
+          (key) => normalizeExpenseLabel(key) === normalized,
+        );
+        if (!expenseKey) {
+          return;
+        }
+        const nextValue = (percent / 100) * metrics.grossRentAnnual;
+        if (!Number.isFinite(nextValue)) {
+          return;
+        }
+        if (Math.abs((expenses[expenseKey] ?? 0) - nextValue) > 0.5) {
+          expenses[expenseKey] = nextValue;
+          changed = true;
+        }
+      });
+
+      if (!changed) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        operatingExpenses: expenses,
+        operatingExpenseTotal: Object.values(expenses).reduce((sum, val) => sum + val, 0),
+      };
+    });
+  }, [metrics.grossRentAnnual, percentExpenseValues]);
 
   const handlePurchasePriceChange = (value: number) => {
     setAssumptions((prev) => {
@@ -152,6 +220,14 @@ function App() {
     });
   };
 
+  const handlePercentExpenseChange = (normalizedLabel: string, value: number) => {
+    const percentValue = Number.isFinite(value) ? value : 0;
+    setPercentExpenseValues((prev) => ({
+      ...prev,
+      [normalizedLabel]: percentValue,
+    }));
+  };
+
   const handleUnitRentChange = (unitIndex: number, rent: number) => {
     setAssumptions((prev) => {
       const updatedUnits = prev.unitMix.map((unit, index) => (index === unitIndex ? { ...unit, rent } : unit));
@@ -196,8 +272,7 @@ function App() {
       <header className="app-header">
         <div>
           <p className="eyebrow">8-Plex Model</p>
-          <h1>Real Estate Finance Dashboard</h1>
-          <p>Adjust assumptions pulled directly from 8plexmodel.xlsx and watch the underwriting update instantly.</p>
+          <h1>CMHC MLI Select Investment Calculator</h1>
         </div>
         <div className="baseline-chip">
           Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
@@ -222,11 +297,14 @@ function App() {
                 value={assumptions.purchasePrice}
                 onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
               />
-              <input
-                type="number"
-                value={Math.round(assumptions.purchasePrice)}
-                onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
-              />
+              <div className="currency-input">
+                <span className="prefix">$</span>
+                <input
+                  type="number"
+                  value={Math.round(assumptions.purchasePrice)}
+                  onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
+                />
+              </div>
             </div>
           </div>
           <div className="input-control">
@@ -314,11 +392,14 @@ function App() {
                 </p>
                 <label>
                   Monthly Rent
+                <div className="currency-input">
+                  <span className="prefix">$</span>
                   <input
                     type="number"
                     value={unit.rent}
                     onChange={(event) => handleUnitRentChange(index, Number(event.target.value))}
                   />
+                </div>
                 </label>
               </div>
             ))}
@@ -329,19 +410,22 @@ function App() {
                 <p className="unit-label">{item.name}</p>
                 <label>
                   Monthly Amount
-                  <input
-                    type="number"
-                    value={item.monthlyAmount}
-                    onChange={(event) => {
-                      const value = Number(event.target.value);
-                      setAssumptions((prev) => {
-                        const updated = prev.otherIncomeItems.map((income, idx) =>
-                          idx === index ? { ...income, monthlyAmount: value } : income,
-                        );
-                        return { ...prev, otherIncomeItems: updated };
-                      });
-                    }}
-                  />
+                  <div className="currency-input">
+                    <span className="prefix">$</span>
+                    <input
+                      type="number"
+                      value={item.monthlyAmount}
+                      onChange={(event) => {
+                        const value = Number(event.target.value);
+                        setAssumptions((prev) => {
+                          const updated = prev.otherIncomeItems.map((income, idx) =>
+                            idx === index ? { ...income, monthlyAmount: value } : income,
+                          );
+                          return { ...prev, otherIncomeItems: updated };
+                        });
+                      }}
+                    />
+                  </div>
                 </label>
               </div>
             ))}
@@ -361,18 +445,40 @@ function App() {
             <p className="muted">Per year</p>
           </div>
           <div className="expense-list">
-            {Object.entries(assumptions.operatingExpenses ?? {}).map(([label, value]) => (
-              <div key={label} className="expense-item">
-                <label>
-                  {label}
-                  <input
-                    type="number"
-                    value={Math.round(value)}
-                    onChange={(event) => handleOperatingExpenseChange(label, Number(event.target.value))}
-                  />
-                </label>
-              </div>
-            ))}
+            {Object.entries(assumptions.operatingExpenses ?? {}).map(([label, value]) => {
+              const displayLabel = sanitizeExpenseLabel(label);
+              const normalizedLabel = normalizeExpenseLabel(label);
+              const isPercentExpense = percentageExpenseLabels.has(normalizedLabel);
+              return (
+                <div key={label} className="expense-item">
+                  <label>
+                    {displayLabel}
+                    {isPercentExpense ? (
+                      <div className="percent-input">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={percentExpenseValues[normalizedLabel] ?? 0}
+                          onChange={(event) => handlePercentExpenseChange(normalizedLabel, Number(event.target.value))}
+                        />
+                        <span className="suffix">%</span>
+                      </div>
+                    ) : (
+                      <div className="currency-input">
+                        <span className="prefix">$</span>
+                        <input
+                          type="number"
+                          value={Math.round(value)}
+                          onChange={(event) => handleOperatingExpenseChange(label, Number(event.target.value))}
+                        />
+                      </div>
+                    )}
+                  </label>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
