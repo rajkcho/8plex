@@ -122,6 +122,53 @@ type MetricCard = {
   tooltip?: MetricTooltip;
 };
 
+type MetricCardViewProps = {
+  card: MetricCard;
+};
+
+const MetricCardView = ({ card }: MetricCardViewProps) => {
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const tooltipId = `metric-tooltip-${slugifyLabel(card.label)}`;
+
+  const showTooltip = () => setIsTooltipVisible(true);
+  const hideTooltip = () => setIsTooltipVisible(false);
+
+  return (
+    <div className="metric-card">
+      <div className="metric-card-header">
+        <p className="metric-label">{card.label}</p>
+        {card.tooltip && (
+          <button
+            type="button"
+            className="metric-info-button"
+            aria-label={`What is ${card.tooltip.title}?`}
+            aria-describedby={tooltipId}
+            onMouseEnter={showTooltip}
+            onMouseLeave={hideTooltip}
+            onPointerEnter={showTooltip}
+            onPointerLeave={hideTooltip}
+            onFocus={showTooltip}
+            onBlur={hideTooltip}
+          >
+            <span aria-hidden="true">?</span>
+            <div
+              id={tooltipId}
+              className="metric-tooltip"
+              role="tooltip"
+              data-visible={isTooltipVisible}
+            >
+              <p className="metric-tooltip-title">{card.tooltip.title}</p>
+              <p className="metric-tooltip-text">{card.tooltip.description}</p>
+            </div>
+          </button>
+        )}
+      </div>
+      <p className="metric-value">{card.format(card.value)}</p>
+      {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
+    </div>
+  );
+};
+
 type CashFlowBar = {
   name: string;
   value: number;
@@ -475,10 +522,10 @@ function App() {
     },
   ];
 
-  const metricCards: MetricCard[] = [
-    {
-      label: 'NOI',
-      value: metrics.noi,
+const metricCards: MetricCard[] = [
+  {
+    label: 'NOI',
+    value: metrics.noi,
       format: currencyFormatter.format,
       tooltip: {
         title: 'NOI',
@@ -522,10 +569,10 @@ function App() {
         description:
           'Capitalization Rate. NOI divided by the purchase price or property value, expressed as a percentage.',
       },
-    },
-  ];
+  },
+];
 
-  return (
+return (
     <div className="app-shell">
       <header className="app-header">
         <div className="header-top">
@@ -535,32 +582,9 @@ function App() {
           </div>
         </div>
         <div className="header-metrics">
-          {metricCards.map((card) => {
-            const tooltipId = `metric-tooltip-${slugifyLabel(card.label)}`;
-            return (
-              <div key={card.label} className="metric-card">
-                <div className="metric-card-header">
-                  <p className="metric-label">{card.label}</p>
-                  {card.tooltip && (
-                    <button
-                      type="button"
-                      className="metric-info-button"
-                      aria-label={`What is ${card.tooltip.title}?`}
-                      aria-describedby={tooltipId}
-                    >
-                      <span aria-hidden="true">?</span>
-                      <div id={tooltipId} className="metric-tooltip" role="tooltip">
-                        <p className="metric-tooltip-title">{card.tooltip.title}</p>
-                        <p className="metric-tooltip-text">{card.tooltip.description}</p>
-                      </div>
-                    </button>
-                  )}
-                </div>
-                <p className="metric-value">{card.format(card.value)}</p>
-                {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
-              </div>
-            );
-          })}
+          {metricCards.map((card) => (
+            <MetricCardView key={card.label} card={card} />
+          ))}
         </div>
       </header>
 

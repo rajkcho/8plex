@@ -372,8 +372,7 @@ input[type='number'] {
   z-index: 5;
 }
 
-.metric-info-button:hover .metric-tooltip,
-.metric-info-button:focus-visible .metric-tooltip {
+.metric-tooltip[data-visible='true'] {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
