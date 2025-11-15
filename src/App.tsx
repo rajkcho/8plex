@@ -129,8 +129,6 @@ type MetricCardViewProps = {
 const MetricCardView = ({ card }: MetricCardViewProps) => {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const tooltipId = `metric-tooltip-${slugifyLabel(card.label)}`;
-  const tooltipText =
-    card.tooltip && `${card.tooltip.title}\n${card.tooltip.description}`;
 
   const showTooltip = () => setIsTooltipVisible(true);
   const hideTooltip = () => setIsTooltipVisible(false);
@@ -145,7 +143,6 @@ const MetricCardView = ({ card }: MetricCardViewProps) => {
             className="metric-info-button"
             aria-label={`What is ${card.tooltip.title}?`}
             aria-describedby={tooltipId}
-            title={tooltipText}
             onMouseEnter={showTooltip}
             onMouseLeave={hideTooltip}
             onPointerEnter={showTooltip}

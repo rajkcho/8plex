@@ -372,7 +372,8 @@ input[type='number'] {
 
 .metric-tooltip {
   position: absolute;
-  top: calc(100% + 0.4rem);
+  bottom: calc(100% + 0.4rem);
+  top: auto;
   right: 0;
   background: rgba(15, 23, 42, 0.95);
   color: #fff;
@@ -382,7 +383,7 @@ input[type='number'] {
   width: min(240px, 70vw);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-0.25rem);
+  transform: translateY(0.25rem);
   transition: opacity 0.15s ease, transform 0.15s ease;
   z-index: 5;
 }
