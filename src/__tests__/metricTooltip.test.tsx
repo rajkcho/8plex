@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from '../App';
 
 const createFetchMock = () =>
@@ -36,5 +36,22 @@ describe('metric tooltip interactions', () => {
 
     fireEvent.pointerLeave(infoButton);
     await waitFor(() => expect(tooltip).toHaveAttribute('data-visible', 'false'));
+  });
+
+  test('hover shows the annual cash flow tooltip content', async () => {
+    render(<App />);
+
+    const buttons = await screen.findAllByRole('button', { name: /what is annual cash flow/i });
+    expect(buttons.length).toBeGreaterThan(0);
+    const [infoButton] = buttons;
+    const tooltip = infoButton.querySelector('[role="tooltip"]') as HTMLElement | null;
+    expect(tooltip).not.toBeNull();
+    if (!tooltip) {
+      return;
+    }
+
+    fireEvent.mouseEnter(infoButton);
+    await waitFor(() => expect(tooltip).toHaveAttribute('data-visible', 'true'));
+    await waitFor(() => expect(within(tooltip).getByText(/total cash received from the property in a year/i)).toBeVisible());
   });
 });
