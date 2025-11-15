@@ -13,9 +13,7 @@
 
 .app-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -23,6 +21,14 @@
 .app-header h1 {
   margin-bottom: 0.5rem;
   font-size: clamp(2rem, 3vw, 2.75rem);
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .baseline-chip {
@@ -359,6 +365,7 @@ input[type='number'] {
   margin-top: 1.25rem;
   margin-bottom: 0;
   overflow-x: auto;
+  width: 100%;
 }
 
 .header-metrics .metric-card {

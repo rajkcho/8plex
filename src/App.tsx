@@ -321,20 +321,20 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
+        <div className="header-top">
           <h1>CMHC MLI Select Investment Calculator</h1>
-          <div className="header-metrics">
-            {metricCards.map((card) => (
-              <div key={card.label} className="metric-card">
-                <p className="metric-label">{card.label}</p>
-                <p className="metric-value">{card.format(card.value)}</p>
-                {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
-              </div>
-            ))}
+          <div className="baseline-chip">
+            Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
           </div>
         </div>
-        <div className="baseline-chip">
-          Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
+        <div className="header-metrics">
+          {metricCards.map((card) => (
+            <div key={card.label} className="metric-card">
+              <p className="metric-label">{card.label}</p>
+              <p className="metric-value">{card.format(card.value)}</p>
+              {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
+            </div>
+          ))}
         </div>
       </header>
 
