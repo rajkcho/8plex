@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
@@ -128,13 +128,56 @@ type MetricCardViewProps = {
 
 const MetricCardView = ({ card }: MetricCardViewProps) => {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const [tooltipAlign, setTooltipAlign] = useState<'left' | 'right'>('left');
   const tooltipId = `metric-tooltip-${slugifyLabel(card.label)}`;
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
 
-  const showTooltip = () => setIsTooltipVisible(true);
+  const evaluateTooltipAlignment = () => {
+    if (typeof window === 'undefined') {
+      setTooltipAlign('left');
+      return;
+    }
+    const cardElement = cardRef.current;
+    const tooltipElement = tooltipRef.current;
+    if (!cardElement || !tooltipElement) {
+      setTooltipAlign('left');
+      return;
+    }
+    const tooltipWidth = tooltipElement.offsetWidth || 0;
+    const cardBounds = cardElement.getBoundingClientRect();
+    const spaceOnRight = window.innerWidth - cardBounds.left;
+    const spaceOnLeft = cardBounds.right;
+    if (spaceOnRight < tooltipWidth && spaceOnLeft >= tooltipWidth) {
+      setTooltipAlign('right');
+    } else if (spaceOnLeft < tooltipWidth && spaceOnRight >= tooltipWidth) {
+      setTooltipAlign('left');
+    } else {
+      setTooltipAlign(spaceOnRight >= spaceOnLeft ? 'left' : 'right');
+    }
+  };
+
+  const showTooltip = () => {
+    setIsTooltipVisible(true);
+    if (typeof window === 'undefined') {
+      setTooltipAlign('left');
+      return;
+    }
+    window.requestAnimationFrame(() => evaluateTooltipAlignment());
+  };
   const hideTooltip = () => setIsTooltipVisible(false);
 
+  useEffect(() => {
+    if (!isTooltipVisible || typeof window === 'undefined') {
+      return;
+    }
+    const handleResize = () => evaluateTooltipAlignment();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isTooltipVisible]);
+
   return (
-    <div className="metric-card">
+    <div className="metric-card" ref={cardRef}>
       <div className="metric-card-header">
         <p className="metric-label">{card.label}</p>
         {card.tooltip && (
@@ -151,7 +194,14 @@ const MetricCardView = ({ card }: MetricCardViewProps) => {
             onBlur={hideTooltip}
           >
             <span aria-hidden="true">?</span>
-            <div id={tooltipId} className="metric-tooltip" role="tooltip" data-visible={isTooltipVisible}>
+            <div
+              id={tooltipId}
+              ref={tooltipRef}
+              className="metric-tooltip"
+              role="tooltip"
+              data-visible={isTooltipVisible}
+              data-align={tooltipAlign}
+            >
               <p className="metric-tooltip-title">{card.tooltip.title}</p>
               <p className="metric-tooltip-text">{card.tooltip.description}</p>
             </div>

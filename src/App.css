@@ -392,6 +392,11 @@ input[type='number'] {
   overflow: visible;
 }
 
+.metric-tooltip[data-align='right'] {
+  left: auto;
+  right: 0;
+}
+
 .metric-tooltip::before {
   content: '';
   position: absolute;
