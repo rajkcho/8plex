@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
+import questionIcon from '../question.webp';
 import './App.css';
 import {
   BarChart,
@@ -39,6 +40,8 @@ const sanitizeExpenseLabel = (label: string): string =>
   label.replace(/@\s*\d+%/gi, '').replace(/\s+\d+%$/gi, '').replace(/\s{2,}/g, ' ').trim();
 
 const normalizeExpenseLabel = (label: string): string => sanitizeExpenseLabel(label).toLowerCase();
+
+const slugifyLabel = (label: string): string => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
 const percentageExpenseLabels = new Set(['vacancy and bad debt']);
 
@@ -107,11 +110,17 @@ const parseScenarioFromApi = (raw: unknown): SavedScenario | null => {
   };
 };
 
+type MetricTooltip = {
+  title: string;
+  description: string;
+};
+
 type MetricCard = {
   label: string;
   value: number;
   format: (value: number) => string;
   subtitle?: string;
+  tooltip?: MetricTooltip;
 };
 
 type CashFlowBar = {
@@ -468,11 +477,53 @@ function App() {
   ];
 
   const metricCards: MetricCard[] = [
-    { label: 'NOI', value: metrics.noi, format: currencyFormatter.format },
-    { label: 'Annual Cash Flow', value: metrics.cashFlow, format: currencyFormatter.format },
-    { label: 'Cash-on-Cash', value: metrics.cashOnCash, format: percentFormatter.format },
-    { label: 'DSCR', value: metrics.dscr, format: percentFormatter.format },
-    { label: 'Cap Rate', value: metrics.capRate, format: percentFormatter.format },
+    {
+      label: 'NOI',
+      value: metrics.noi,
+      format: currencyFormatter.format,
+      tooltip: {
+        title: 'NOI',
+        description: 'Net Operating Income. Rental income minus operating expenses, before debt service and taxes.',
+      },
+    },
+    {
+      label: 'Annual Cash Flow',
+      value: metrics.cashFlow,
+      format: currencyFormatter.format,
+      tooltip: {
+        title: 'ANNUAL CASH FLOW',
+        description: 'Total cash received from the property in a year after all expenses and debt payments.',
+      },
+    },
+    {
+      label: 'Cash-on-Cash',
+      value: metrics.cashOnCash,
+      format: percentFormatter.format,
+      tooltip: {
+        title: 'CASH-ON-CASH RETURN',
+        description: 'Annual pre-tax cash flow divided by the total cash you invested in the deal.',
+      },
+    },
+    {
+      label: 'DSCR',
+      value: metrics.dscr,
+      format: percentFormatter.format,
+      tooltip: {
+        title: 'DSCR',
+        description:
+          'Debt Service Coverage Ratio. NOI divided by annual loan payments, showing how easily the property covers its debt.',
+      },
+    },
+    {
+      label: 'Cap Rate',
+      value: metrics.capRate,
+      format: percentFormatter.format,
+      tooltip: {
+        title: 'CAP RATE',
+        description:
+          'Capitalization Rate. NOI divided by the purchase price or property value, expressed as a percentage.',
+      },
+    },
   ];
 
   return (
@@ -485,13 +536,30 @@ function App() {
           </div>
         </div>
         <div className="header-metrics">
-          {metricCards.map((card) => (
-            <div key={card.label} className="metric-card">
-              <p className="metric-label">{card.label}</p>
-              <p className="metric-value">{card.format(card.value)}</p>
-              {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
-            </div>
-          ))}
+          {metricCards.map((card) => {
+            const tooltipId = `metric-tooltip-${slugifyLabel(card.label)}`;
+            return (
+              <div key={card.label} className="metric-card">
+                {card.tooltip && (
+                  <button
+                    type="button"
+                    className="metric-info-button"
+                    aria-label={`What is ${card.tooltip.title}?`}
+                    aria-describedby={tooltipId}
+                  >
+                    <img src={questionIcon} alt="" aria-hidden="true" />
+                    <div id={tooltipId} className="metric-tooltip" role="tooltip">
+                      <p className="metric-tooltip-title">{card.tooltip.title}</p>
+                      <p className="metric-tooltip-text">{card.tooltip.description}</p>
+                    </div>
+                  </button>
+                )}
+                <p className="metric-label">{card.label}</p>
+                <p className="metric-value">{card.format(card.value)}</p>
+                {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
+              </div>
+            );
+          })}
         </div>
       </header>
 
