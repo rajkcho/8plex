@@ -344,6 +344,10 @@ input[type='number'] {
   border: 1px solid #d5e1f5;
 }
 
+.expense-item .currency-input input {
+  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
