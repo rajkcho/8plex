@@ -26,8 +26,8 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 
 const percentFormatter = new Intl.NumberFormat('en-US', {
   style: 'percent',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
 });
 
 const sanitizeExpenseLabel = (label: string): string =>
@@ -314,7 +314,7 @@ function App() {
     { label: 'NOI', value: metrics.noi, format: currencyFormatter.format },
     { label: 'Annual Cash Flow', value: metrics.cashFlow, format: currencyFormatter.format },
     { label: 'Cash-on-Cash', value: metrics.cashOnCash, format: percentFormatter.format },
-    { label: 'DSCR', value: metrics.dscr, format: (value) => value.toFixed(2) },
+    { label: 'DSCR', value: metrics.dscr, format: percentFormatter.format },
     { label: 'Cap Rate', value: metrics.capRate, format: percentFormatter.format },
   ];
 
