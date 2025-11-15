@@ -539,21 +539,23 @@ function App() {
             const tooltipId = `metric-tooltip-${slugifyLabel(card.label)}`;
             return (
               <div key={card.label} className="metric-card">
-                {card.tooltip && (
-                  <button
-                    type="button"
-                    className="metric-info-button"
-                    aria-label={`What is ${card.tooltip.title}?`}
-                    aria-describedby={tooltipId}
-                  >
-                    <span aria-hidden="true">?</span>
-                    <div id={tooltipId} className="metric-tooltip" role="tooltip">
-                      <p className="metric-tooltip-title">{card.tooltip.title}</p>
-                      <p className="metric-tooltip-text">{card.tooltip.description}</p>
-                    </div>
-                  </button>
-                )}
-                <p className="metric-label">{card.label}</p>
+                <div className="metric-card-header">
+                  <p className="metric-label">{card.label}</p>
+                  {card.tooltip && (
+                    <button
+                      type="button"
+                      className="metric-info-button"
+                      aria-label={`What is ${card.tooltip.title}?`}
+                      aria-describedby={tooltipId}
+                    >
+                      <span aria-hidden="true">?</span>
+                      <div id={tooltipId} className="metric-tooltip" role="tooltip">
+                        <p className="metric-tooltip-title">{card.tooltip.title}</p>
+                        <p className="metric-tooltip-text">{card.tooltip.description}</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
                 <p className="metric-value">{card.format(card.value)}</p>
                 {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
               </div>
