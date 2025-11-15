@@ -228,9 +228,60 @@ function App() {
     }));
   };
 
-  const handleUnitRentChange = (unitIndex: number, rent: number) => {
+  const updateUnitMixEntry = (unitIndex: number, updates: Partial<UnitAssumption>) => {
     setAssumptions((prev) => {
-      const updatedUnits = prev.unitMix.map((unit, index) => (index === unitIndex ? { ...unit, rent } : unit));
+      const currentUnitMix = prev.unitMix ?? [];
+      const updatedUnits = currentUnitMix.map((unit, index) => (index === unitIndex ? { ...unit, ...updates } : unit));
+      return {
+        ...prev,
+        unitMix: updatedUnits,
+      };
+    });
+  };
+
+  const handleUnitRentChange = (unitIndex: number, rent: number) => {
+    const sanitizedRent = Number.isFinite(rent) ? Math.max(0, rent) : 0;
+    updateUnitMixEntry(unitIndex, { rent: sanitizedRent });
+  };
+
+  const handleUnitCountChange = (unitIndex: number, units: number) => {
+    const sanitizedUnits = Number.isFinite(units) ? Math.max(0, Math.round(units)) : 0;
+    updateUnitMixEntry(unitIndex, { units: sanitizedUnits });
+  };
+
+  const handleUnitBedroomChange = (unitIndex: number, bedrooms: number) => {
+    const sanitizedBedrooms = Number.isFinite(bedrooms) ? Math.max(0, Math.round(bedrooms)) : 0;
+    updateUnitMixEntry(unitIndex, { bedrooms: sanitizedBedrooms });
+  };
+
+  const handleUnitNameChange = (unitIndex: number, name: string) => {
+    updateUnitMixEntry(unitIndex, { name });
+  };
+
+  const handleAddUnitType = () => {
+    setAssumptions((prev) => {
+      const currentUnitMix = prev.unitMix ?? [];
+      const nextIndex = currentUnitMix.length + 1;
+      const newUnit: UnitAssumption = {
+        name: `Unit Type ${nextIndex}`,
+        units: 0,
+        rent: 0,
+        bedrooms: 0,
+      };
+      return {
+        ...prev,
+        unitMix: [...currentUnitMix, newUnit],
+      };
+    });
+  };
+
+  const handleRemoveUnitType = (unitIndex: number) => {
+    setAssumptions((prev) => {
+      const currentUnitMix = prev.unitMix ?? [];
+      if (currentUnitMix.length <= 1) {
+        return prev;
+      }
+      const updatedUnits = currentUnitMix.filter((_, index) => index !== unitIndex);
       return {
         ...prev,
         unitMix: updatedUnits,
@@ -305,6 +356,7 @@ function App() {
                   onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
                 />
               </div>
+            </div>
           </div>
           <div className="input-control">
             <label htmlFor="loanToValue">Loan to Value</label>
@@ -385,24 +437,66 @@ function App() {
           </div>
           <div className="unit-grid">
             {assumptions.unitMix.map((unit: UnitAssumption, index: number) => (
-              <div key={unit.name} className="unit-card">
-                <p className="unit-label">
-                  {unit.units}x {unit.name}
-                </p>
-                <label>
-                  Monthly Rent
-                  <div className="currency-input">
-                    <span className="prefix">$</span>
+              <div key={`${unit.name}-${index}`} className="unit-card">
+                <div className="unit-card-header">
+                  <label className="unit-label-input">
+                    Unit Label
+                    <input
+                      type="text"
+                      value={unit.name}
+                      onChange={(event) => handleUnitNameChange(index, event.target.value)}
+                      placeholder="e.g. 2 Bed Lower"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="unit-remove-button"
+                    onClick={() => handleRemoveUnitType(index)}
+                    disabled={(assumptions.unitMix?.length ?? 0) <= 1}
+                    aria-label="Remove unit type"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="unit-fields">
+                  <label>
+                    # of Units
                     <input
                       type="number"
-                      value={unit.rent}
-                      onChange={(event) => handleUnitRentChange(index, Number(event.target.value))}
+                      min={0}
+                      step={1}
+                      value={unit.units}
+                      onChange={(event) => handleUnitCountChange(index, Number(event.target.value))}
                     />
-                  </div>
-                </label>
+                  </label>
+                  <label>
+                    # of Bedrooms
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={unit.bedrooms ?? 0}
+                      onChange={(event) => handleUnitBedroomChange(index, Number(event.target.value))}
+                    />
+                  </label>
+                  <label className="unit-rent-field">
+                    Monthly Rent
+                    <div className="currency-input">
+                      <span className="prefix">$</span>
+                      <input
+                        type="number"
+                        value={unit.rent}
+                        onChange={(event) => handleUnitRentChange(index, Number(event.target.value))}
+                      />
+                    </div>
+                  </label>
+                </div>
               </div>
             ))}
           </div>
+          <button type="button" className="add-unit-button" onClick={handleAddUnitType}>
+            + Add unit type
+          </button>
           <div className="other-income">
             {assumptions.otherIncomeItems.map((item, index) => (
               <div key={item.name} className="unit-card">

@@ -4,6 +4,7 @@ export type UnitAssumption = {
   name: string;
   units: number;
   rent: number;
+  bedrooms: number;
 };
 
 export type OtherIncomeItem = {

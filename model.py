@@ -4,6 +4,8 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, TypedDict
 
+import re
+
 import pandas as pd
 from openpyxl import load_workbook
 
@@ -70,6 +72,7 @@ class UnitAssumption(TypedDict):
     name: str
     units: float
     rent: float
+    bedrooms: float
 
 
 class OtherIncomeAssumption(TypedDict):
@@ -125,6 +128,16 @@ def _infer_interest_rate(monthly_payment: float, principal: float, amort_years: 
     return (low + high) / 2
 
 
+def _infer_bedrooms(label: str) -> float:
+    match = re.search(r"(\d+)\s*bed", label, re.IGNORECASE)
+    if not match:
+        return 0.0
+    try:
+        return float(match.group(1))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _build_baseline_assumptions() -> Assumptions:
     purchase_price = float(_read_cell(*CELL_MAP["purchase_price"]))
     broker_fee = float(_read_cell(*CELL_MAP["broker_fee"]))
@@ -144,11 +157,13 @@ def _build_baseline_assumptions() -> Assumptions:
 
     unit_mix: List[UnitAssumption] = []
     for data in UNIT_ROW_MAP.values():
+        label = str(_read_cell(*data["label"]))
         unit_mix.append(
             {
-                "name": str(_read_cell(*data["label"])),
+                "name": label,
                 "units": float(_read_cell(*data["units"])),
                 "rent": float(_read_cell(*data["rent"])),
+                "bedrooms": _infer_bedrooms(label),
             }
         )
 

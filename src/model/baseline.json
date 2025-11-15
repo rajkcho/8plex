@@ -20,12 +20,14 @@
       {
         "name": "3 bed upper",
         "units": 4,
-        "rent": 2450
+        "rent": 2450,
+        "bedrooms": 3
       },
       {
         "name": "2 bed lower",
         "units": 4,
-        "rent": 1450
+        "rent": 1450,
+        "bedrooms": 2
       }
     ],
     "otherIncomeItems": [

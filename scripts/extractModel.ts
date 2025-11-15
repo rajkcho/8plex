@@ -7,6 +7,7 @@ type UnitAssumption = {
   name: string;
   units: number;
   rent: number;
+  bedrooms: number;
 };
 
 type OtherIncomeAssumption = {
@@ -60,16 +61,27 @@ const readString = (ws: WorkSheet, cell: string): string => {
   return String(value).trim();
 };
 
+const inferBedroomsFromName = (name: string): number => {
+  const match = name.match(/(\d+)\s*bed/i);
+  if (!match) {
+    return 0;
+  }
+  const parsed = Number(match[1]);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
 const unitRows: UnitAssumption[] = [
   {
     name: readString(sheet, 'B12'),
     units: readNumber(sheet, 'C12'),
     rent: readNumber(sheet, 'D12'),
+    bedrooms: inferBedroomsFromName(readString(sheet, 'B12')),
   },
   {
     name: readString(sheet, 'B13'),
     units: readNumber(sheet, 'C13'),
     rent: readNumber(sheet, 'D13'),
+    bedrooms: inferBedroomsFromName(readString(sheet, 'B13')),
   },
 ];
 
