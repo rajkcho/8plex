@@ -297,14 +297,10 @@ function App() {
                 value={assumptions.purchasePrice}
                 onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
               />
-              <div className="currency-input">
+              <div className="input-with-prefix">
                 <span className="prefix">$</span>
                 <input
                   type="number"
-                  value={Math.round(assumptions.purchasePrice)}
-                  onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
-                />
-              </div>
             </div>
           </div>
           <div className="input-control">
@@ -392,7 +388,7 @@ function App() {
                 </p>
                 <label>
                   Monthly Rent
-                <div className="currency-input">
+                <div className="input-with-prefix">
                   <span className="prefix">$</span>
                   <input
                     type="number"
@@ -410,7 +406,7 @@ function App() {
                 <p className="unit-label">{item.name}</p>
                 <label>
                   Monthly Amount
-                  <div className="currency-input">
+                  <div className="input-with-prefix">
                     <span className="prefix">$</span>
                     <input
                       type="number"
@@ -466,7 +462,7 @@ function App() {
                         <span className="suffix">%</span>
                       </div>
                     ) : (
-                      <div className="currency-input">
+                      <div className="input-with-prefix">
                         <span className="prefix">$</span>
                         <input
                           type="number"

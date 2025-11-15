@@ -106,40 +106,17 @@
   gap: 1rem;
 }
 
-.currency-input {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 0.6rem;
-  border: 1px solid #c7d7f7;
-  background: #fff;
-  width: 100%;
-}
-
-.currency-input .prefix {
-  font-weight: 600;
-  color: #1d4ed8;
-}
-
-.currency-input input {
-  border: none;
-  outline: none;
-  width: 100%;
-  font-size: 0.95rem;
-  padding: 0;
-}
-
-.currency-input input[type='number']::-webkit-outer-spin-button,
-.currency-input input[type='number']::-webkit-inner-spin-button {
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.currency-input input[type='number'] {
+input[type='number'] {
   -moz-appearance: textfield;
 }
 
+.input-with-prefix,
 .percent-input {
   display: flex;
   align-items: center;
@@ -151,17 +128,19 @@
   width: 100%;
 }
 
+.input-with-prefix .prefix,
+.percent-input .suffix {
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.input-with-prefix input,
 .percent-input input {
   border: none;
   outline: none;
   width: 100%;
   font-size: 0.95rem;
   padding: 0;
-}
-
-.percent-input .suffix {
-  font-weight: 600;
-  color: #1d4ed8;
 }
 
 .input-stack {
