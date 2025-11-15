@@ -61,8 +61,8 @@ const WaterfallTooltip = ({ active, payload }: WaterfallTooltipProps) => {
     <div className="chart-tooltip">
       <strong>{item.name}</strong>
       <span>{item.isTotal ? 'Net Cash Flow' : 'Change'}: {currencyFormatter.format(item.value)}</span>
-      {!item.isTotal && <span>Run Rate: {currencyFormatter.format(item.end)}</span>}
-      {item.isTotal && <span>Monthly Run Rate: {currencyFormatter.format(item.end)}</span>}
+      {!item.isTotal && <span>Annual Position: {currencyFormatter.format(item.end)}</span>}
+      {item.isTotal && <span>Annual Net: {currencyFormatter.format(item.end)}</span>}
     </div>
   );
 };
@@ -112,8 +112,8 @@ const WaterfallBars = ({ data, xAxisMap, yAxisMap, offset }: { data: WaterfallPo
         const positiveRadius: RectRadius = [10, 10, 2, 2];
         const negativeRadius: RectRadius = [2, 2, 10, 10];
         const radius: RectRadius = entry.isTotal ? totalRadius : entry.value >= 0 ? positiveRadius : negativeRadius;
-        const labelY = entry.value >= 0 ? yTop - 8 : yBottom + 16;
-        const labelColor = entry.value >= 0 ? '#0f172a' : '#b91c1c';
+        const labelY = Math.min(yTop, yBottom) - 8;
+        const labelColor = entry.isTotal ? '#064e3b' : entry.value >= 0 ? '#0f172a' : '#b91c1c';
 
         const nextEntry = data[index + 1];
         const nextXValue = nextEntry ? xScale(nextEntry.name) : null;
@@ -154,16 +154,16 @@ function App() {
 
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
-    const rentMonthly = metrics.grossRentAnnual / 12;
-    const otherIncomeMonthly = metrics.otherIncomeAnnual / 12;
-    const opexMonthly = metrics.operatingExpensesAnnual / 12;
-    const debtMonthly = metrics.debtServiceAnnual / 12;
+    const rentAnnual = metrics.grossRentAnnual;
+    const otherIncomeAnnual = metrics.otherIncomeAnnual;
+    const opexAnnual = metrics.operatingExpensesAnnual;
+    const debtAnnual = metrics.debtServiceAnnual;
 
     const steps: Omit<WaterfallPoint, 'start' | 'end'>[] = [
-      { name: 'Rental Income', value: rentMonthly, color: '#0ea5e9' },
-      { name: 'Other Income', value: otherIncomeMonthly, color: '#38bdf8' },
-      { name: 'Operating Expenses', value: -opexMonthly, color: '#fb7185' },
-      { name: 'Debt Service', value: -debtMonthly, color: '#f97316' },
+      { name: 'Gross Rent', value: rentAnnual, color: '#0ea5e9' },
+      { name: 'Other Income', value: otherIncomeAnnual, color: '#38bdf8' },
+      { name: 'Operating Expenses', value: -opexAnnual, color: '#fb7185' },
+      { name: 'Debt Service', value: -debtAnnual, color: '#f97316' },
     ];
 
     let cumulative = 0;
@@ -183,7 +183,7 @@ function App() {
       value: cumulative,
       start: 0,
       end: cumulative,
-      color: cumulative >= 0 ? '#16a34a' : '#dc2626',
+      color: '#16a34a',
       isTotal: true,
     });
 
@@ -492,8 +492,8 @@ function App() {
       <section className="charts-grid">
         <div className="chart-card">
           <div className="chart-header">
-            <h3>Monthly Cash Flow Waterfall</h3>
-            <p>Track how recurring income covers expenses and debt service.</p>
+            <h3>Annual Cash Flow Waterfall</h3>
+            <p>See how yearly income offsets expenses and debt service.</p>
           </div>
           <ResponsiveContainer width="100%" height={360}>
             <ComposedChart data={waterfallData}>
