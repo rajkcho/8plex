@@ -218,7 +218,11 @@ type ScenarioComparisonBar = {
   cashFlow: number;
 };
 
-const ScenarioComparisonTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+type ScenarioComparisonTooltipProps = TooltipProps<number, string> & {
+  payload?: Array<{ payload: ScenarioComparisonBar }>;
+};
+
+const ScenarioComparisonTooltip = ({ active, payload }: ScenarioComparisonTooltipProps) => {
   if (!active || !payload?.length) {
     return null;
   }
