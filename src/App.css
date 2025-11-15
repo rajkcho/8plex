@@ -84,6 +84,10 @@
   gap: 1.25rem;
 }
 
+.full-width-panel {
+  width: 100%;
+}
+
 .market-rent-panel {
   gap: 1rem;
 }
@@ -96,8 +100,9 @@
 
 .market-rent-controls label {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: center;
   font-weight: 600;
   color: #475569;
 }
@@ -133,8 +138,9 @@
   color: #0f172a;
 }
 
-.scenario-panel {
-  gap: 1rem;
+.panel.scenario-panel {
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem 1rem;
 }
 
 .scenario-form {
