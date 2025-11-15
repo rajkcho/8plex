@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, SVGProps } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
+import mliCalcLogo from '../mlicalclogo.png';
 import './App.css';
 import {
   BarChart,
@@ -372,6 +373,17 @@ const ScenarioComparisonTooltip = ({ active, payload }: ScenarioComparisonToolti
     </div>
   );
 };
+
+const CalculatorIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+    <rect x={4} y={2.5} width={16} height={19} rx={3} />
+    <rect x={7} y={6} width={10} height={3} rx={1.2} fill="currentColor" stroke="none" />
+    <circle cx={9} cy={12.5} r={1.3} />
+    <circle cx={15} cy={12.5} r={1.3} />
+    <circle cx={9} cy={16.5} r={1.3} />
+    <circle cx={15} cy={16.5} r={1.3} />
+  </svg>
+);
 
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
@@ -759,7 +771,13 @@ function App() {
     <div className="app-shell">
       <header className="app-header">
         <div className="header-top">
-          <h1>CMHC MLI Select Investment Calculator</h1>
+          <div className="header-branding">
+            <img src={mliCalcLogo} alt="MLI Calc logo" className="app-logo" />
+            <div className="header-title">
+              <CalculatorIcon className="header-title-icon" aria-hidden="true" focusable="false" />
+              <h1>MLI Calc</h1>
+            </div>
+          </div>
           <div className="baseline-chip">
             Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
           </div>
@@ -1095,7 +1113,7 @@ function App() {
             </div>
           </div>
 
-          <div className="panel full-width market-rent-panel">
+          <div className="panel market-rent-panel">
             <div className="panel-header">
               <h2>Market Rent Data</h2>
               <p>Select a city to review market rent benchmarks.</p>

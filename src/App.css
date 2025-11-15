@@ -19,7 +19,7 @@
 }
 
 .app-header h1 {
-  margin-bottom: 0.5rem;
+  margin: 0;
   font-size: clamp(2rem, 3vw, 2.75rem);
 }
 
@@ -29,6 +29,36 @@
   align-items: flex-start;
   gap: 1.5rem;
   flex-wrap: wrap;
+}
+
+.header-branding {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.app-logo {
+  height: 62px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.header-title-icon {
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0.4rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, #bae6fd, #e0f2fe);
+  color: #0f172a;
+  box-shadow: 0 12px 30px rgba(14, 165, 233, 0.25);
 }
 
 .baseline-chip {
@@ -66,10 +96,6 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-}
-
-.panel.full-width {
-  grid-column: 1 / -1;
 }
 
 .market-rent-panel {
