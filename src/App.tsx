@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
 import headerLogo from '../logo2.png';
@@ -720,6 +720,18 @@ function App() {
     void handleSaveScenario();
   };
 
+  const handleScenarioSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const scenarioId = event.target.value;
+    if (!scenarioId) {
+      setActiveScenarioId(null);
+      return;
+    }
+    const scenario = scenarios.find((entry) => entry.id === scenarioId);
+    if (scenario) {
+      handleApplyScenario(scenario);
+    }
+  };
+
   const handleSaveScenario = async (): Promise<void> => {
     const trimmedName = scenarioName.trim();
     if (!trimmedName) {
@@ -811,7 +823,7 @@ function App() {
       },
     },
     {
-      label: 'Annual Cash Flow',
+      label: 'Annual CF',
       value: metrics.cashFlow,
       format: currencyFormatter.format,
       tooltip: {
@@ -905,38 +917,42 @@ function App() {
               </div>
             </form>
             {scenarioError && <p className="scenario-error">{scenarioError}</p>}
-            <div className="scenario-list">
+            <div className="scenario-picker">
               {isLoadingScenarios ? (
                 <p className="scenario-muted">Loading scenarios...</p>
               ) : scenarios.length === 0 ? (
                 <p className="scenario-muted">No saved scenarios yet.</p>
               ) : (
-                scenarios.map((scenario) => (
-                  <div
-                    key={scenario.id}
-                    className={`scenario-item${activeScenarioId === scenario.id ? ' active' : ''}`}
-                  >
-                    <button
-                      type="button"
-                      className="scenario-load"
-                      onClick={() => handleApplyScenario(scenario)}
+                <>
+                  <label htmlFor="scenarioSelect">Saved scenarios</label>
+                  <div className="scenario-picker-row">
+                    <select
+                      id="scenarioSelect"
+                      value={activeScenarioId ?? ''}
+                      onChange={handleScenarioSelectChange}
                     >
-                      <span className="scenario-name">{scenario.name}</span>
-                      <span className="scenario-timestamp">{formatScenarioTimestamp(scenario.createdAt)}</span>
-                    </button>
+                      <option value="">Select a scenario</option>
+                      {scenarios.map((scenario) => (
+                        <option key={scenario.id} value={scenario.id}>
+                          {scenario.name} ({formatScenarioTimestamp(scenario.createdAt)})
+                        </option>
+                      ))}
+                    </select>
                     <button
                       type="button"
-                      className="scenario-delete"
-                      aria-label={`Delete ${scenario.name}`}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void handleDeleteScenario(scenario.id);
+                      className="scenario-delete-button"
+                      onClick={() => {
+                        if (activeScenarioId) {
+                          void handleDeleteScenario(activeScenarioId);
+                        }
                       }}
+                      disabled={!activeScenarioId}
                     >
-                      X
+                      Delete
                     </button>
                   </div>
-                ))
+                  <p className="scenario-picker-hint">Selecting a scenario loads its assumptions.</p>
+                </>
               )}
             </div>
           </div>

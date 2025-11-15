@@ -39,9 +39,9 @@
 }
 
 .app-logo {
-  width: 28.75%;
+  width: 43.125%;
   height: auto;
-  max-width: 403px;
+  max-width: 605px;
   object-fit: contain;
   display: block;
   flex: 0 0 auto;
@@ -251,6 +251,54 @@
   margin: 0;
   color: #94a3b8;
   font-size: 0.9rem;
+}
+
+.scenario-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scenario-picker label {
+  font-weight: 600;
+  color: #475569;
+}
+
+.scenario-picker-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.scenario-picker-row select {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.8rem;
+  border: 1px solid #c7d7f7;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.scenario-delete-button {
+  border: none;
+  border-radius: 0.85rem;
+  background: #dc2626;
+  color: #fff;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.scenario-delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scenario-picker-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
 }
 
 .panel-header h2 {
@@ -657,6 +705,31 @@ input[type='number'] {
 .expense-item .percent-input input {
   border: none;
   padding: 0;
+}
+
+.expense-add {
+  margin-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.25rem;
+}
+
+.expense-add-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.expense-add label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.expense-add label input {
+  font-weight: 400;
 }
 
 .metrics-grid {
