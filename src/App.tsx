@@ -575,6 +575,14 @@ function App() {
     });
   };
 
+  const handleContingencyChange = (value: number) => {
+    const capped = Number.isFinite(value) ? Math.max(0, Math.min(value, 100)) : 0;
+    setAssumptions((prev) => ({
+      ...prev,
+      contingencyPct: capped / 100,
+    }));
+  };
+
   const totalOperatingExpenses = useMemo(() => {
     const expenses = assumptions.operatingExpenses ?? {};
     return Object.values(expenses).reduce((sum, value) => sum + value, 0);
@@ -794,10 +802,15 @@ function App() {
     }
   };
 
+  const contingencyPctValue = assumptions.contingencyPct ?? 0;
+  const totalEquityPct = Math.max(0, (assumptions.depositPct ?? 0) + contingencyPctValue);
+  const totalAcquisitionCost = assumptions.purchasePrice + assumptions.brokerFee;
+  const equityWithContingency = totalAcquisitionCost * totalEquityPct;
+
   const assumptionCards: MetricCard[] = [
     {
       label: 'Capex Adjusted Purchase Price',
-      value: assumptions.purchasePrice + assumptions.brokerFee,
+      value: totalAcquisitionCost,
       format: currencyFormatter.format,
       subtitle: 'Price + broker fee',
     },
@@ -812,6 +825,12 @@ function App() {
       value: metrics.equityRequired,
       format: currencyFormatter.format,
       subtitle: percentFormatter.format(assumptions.depositPct ?? 0),
+    },
+    {
+      label: 'Equity Required + Contingency',
+      value: equityWithContingency,
+      format: currencyFormatter.format,
+      subtitle: percentFormatter.format(totalEquityPct),
     },
   ];
 
@@ -1020,6 +1039,21 @@ function App() {
                   />
                   <span className="suffix">%</span>
                 </div>
+              </div>
+            </div>
+            <div className="input-control">
+              <label htmlFor="contingencyPct">Contingency</label>
+              <div className="percent-input">
+                <input
+                  id="contingencyPct"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={(assumptions.contingencyPct ?? 0) * 100}
+                  onChange={(event) => handleContingencyChange(Number(event.target.value))}
+                />
+                <span className="suffix">%</span>
               </div>
             </div>
             <div className="input-stack">

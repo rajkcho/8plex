@@ -20,6 +20,7 @@ export type Assumptions = {
   depositPct?: number;
   depositAmount?: number;
   closingRebate: number;
+  contingencyPct?: number;
   operatingExpenseTotal?: number;
   operatingExpenses?: Record<string, number>;
   unitMix: UnitAssumption[];

@@ -5,6 +5,7 @@
     "depositPct": 0.05,
     "depositAmount": 124175.53199999999,
     "closingRebate": 36702.13,
+    "contingencyPct": 0,
     "operatingExpenseTotal": 60459.33,
     "operatingExpenses": {
       "Property taxes": 20395.33,
