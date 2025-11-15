@@ -69,11 +69,13 @@ const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
 
   const numericValue = Number(value);
   const isPositive = numericValue >= 0;
-  const labelY = isPositive ? y - 8 : y + 20;
+  const yPosition = Number(y);
+  const labelY = isPositive ? yPosition - 8 : yPosition + 20;
   const labelColor = isPositive ? '#0f172a' : '#b91c1c';
+  const xPosition = Number(x) + Number(width) / 2;
 
   return (
-    <text x={(x as number) + (width as number) / 2} y={labelY} textAnchor="middle" fill={labelColor} fontSize={12} fontWeight={600}>
+    <text x={xPosition} y={labelY} textAnchor="middle" fill={labelColor} fontSize={12} fontWeight={600}>
       {currencyFormatter.format(numericValue)}
     </text>
   );
