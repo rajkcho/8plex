@@ -605,27 +605,30 @@ function App() {
                 value={Math.round((assumptions.loanToValue ?? 0) * 100)}
                 onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
               />
-              <input
-                type="number"
-                value={Math.round((assumptions.loanToValue ?? 0) * 100)}
-                onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
-              />
-              <span className="suffix">%</span>
+              <div className="percent-input">
+                <input
+                  type="number"
+                  value={Math.round((assumptions.loanToValue ?? 0) * 100)}
+                  onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
+                />
+                <span className="suffix">%</span>
+              </div>
             </div>
           </div>
           <div className="input-stack">
             <div className="input-control">
               <label htmlFor="interestRate">Interest Rate</label>
               <div className="input-row">
-                <input
-                  id="interestRate"
-                  type="range"
-                  min={2}
-                  max={8}
-                  step={0.05}
-                  value={(assumptions.interestRate ?? 0) * 100}
-                  onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
-                />
+              <input
+                id="interestRate"
+                type="range"
+                min={2}
+                max={8}
+                step={0.05}
+                value={(assumptions.interestRate ?? 0) * 100}
+                onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+              />
+              <div className="percent-input">
                 <input
                   type="number"
                   value={Number(((assumptions.interestRate ?? 0) * 100).toFixed(2))}
@@ -634,6 +637,7 @@ function App() {
                 <span className="suffix">%</span>
               </div>
             </div>
+          </div>
             <div className="input-control">
               <label htmlFor="amortYears">Amortization (Years)</label>
               <div className="input-row">
@@ -642,10 +646,11 @@ function App() {
                   type="range"
                   min={15}
                   max={50}
-                  step={1}
-                  value={assumptions.amortYears}
-                  onChange={(event) => handleAmortChange(Number(event.target.value))}
-                />
+                step={1}
+                value={assumptions.amortYears}
+                onChange={(event) => handleAmortChange(Number(event.target.value))}
+              />
+              <div className="number-input">
                 <input
                   type="number"
                   value={assumptions.amortYears}
@@ -653,6 +658,7 @@ function App() {
                 />
               </div>
             </div>
+          </div>
           </div>
           <div className="assumption-cards">
             {assumptionCards.map((card) => (

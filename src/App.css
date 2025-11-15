@@ -258,6 +258,19 @@ input[type='number'] {
   background: #fff;
 }
 
+.number-input {
+  width: 100%;
+}
+
+.number-input input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid #c7d7f7;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
 .percent-input {
   display: flex;
   align-items: center;
