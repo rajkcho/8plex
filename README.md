@@ -8,10 +8,27 @@ A static underwriting dashboard that mirrors the `8plexmodel.xlsx` workbook. All
 npm install
 # regenerate src/model/baseline.json whenever 8plexmodel.xlsx changes
 npm run extract-model
+npm run server    # start the scenario API (port 4000)
 npm run dev
 ```
 
 Open `http://localhost:5173` to explore the dashboard. The SPA lets you adjust purchase price, rent roll, operating expenses, interest rate, and loan terms while the NOI, cash flow, DSCR, cap rate, and charts recalculate in real time.
+
+### Scenario Library & Persistence
+
+- `npm run server` starts the Node API. In local development (when no Supabase credentials are provided) it falls back to `data/scenarios.json`, so you can experiment offline.
+- For production hosting, create a Supabase project (free tier works), add a `scenarios` table, and drop the credentials into the server as environment variables:
+  ```sql
+  create table if not exists public.scenarios (
+    id uuid primary key default gen_random_uuid(),
+    name text not null,
+    created_at timestamptz not null default now(),
+    assumptions jsonb not null
+  );
+  ```
+  Required env vars: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service role key lives under Project Settings → API in Supabase and allows the server to read/write the table.
+- Point the SPA at the hosted API by setting `VITE_SCENARIO_API_URL` (e.g., `https://your-api.onrender.com`). When it’s omitted, the app continues to call the relative `/api` path so the Vite proxy handles local dev.
+- Use the Scenario Library panel to name the current assumptions, save with the automatic `MM-DD-YY 1:23PM` timestamp, load any shared scenario, or delete one with the `X` action.
 
 ### Model Extraction
 

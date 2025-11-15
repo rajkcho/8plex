@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import './App.css';
 import {
@@ -17,6 +18,9 @@ import type { TooltipProps, LabelProps } from 'recharts';
 
 const baselineAssumptions = loadBaselineAssumptions();
 const baselineMetrics = calculateMetrics(baselineAssumptions);
+const scenarioApiBaseUrl = import.meta.env.VITE_SCENARIO_API_URL ?? '';
+
+const buildScenarioUrl = (path: string): string => (scenarioApiBaseUrl ? `${scenarioApiBaseUrl}${path}` : path);
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -43,19 +47,63 @@ const computeGrossRentAnnual = (assumptions: Assumptions): number => {
   return monthlyRent * 12;
 };
 
-const deriveInitialPercentExpenses = (): Record<string, number> => {
+const deepClone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+
+const derivePercentExpenseValues = (source: Assumptions): Record<string, number> => {
   const result: Record<string, number> = {};
-  const grossRentAnnual = computeGrossRentAnnual(baselineAssumptions);
+  const grossRentAnnual = computeGrossRentAnnual(source);
   if (grossRentAnnual <= 0) {
     return result;
   }
-  Object.entries(baselineAssumptions.operatingExpenses ?? {}).forEach(([label, amount]) => {
+  Object.entries(source.operatingExpenses ?? {}).forEach(([label, amount]) => {
     const normalized = normalizeExpenseLabel(label);
     if (percentageExpenseLabels.has(normalized)) {
       result[normalized] = Number(((amount / grossRentAnnual) * 100).toFixed(2));
     }
   });
   return result;
+};
+
+type SavedScenario = {
+  id: string;
+  name: string;
+  createdAt: string;
+  assumptions: Assumptions;
+};
+
+const formatScenarioTimestamp = (isoString: string): string => {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) {
+    return isoString;
+  }
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear().toString().slice(-2);
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const period = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${month}-${day}-${year} ${hours}:${minutes}${period}`;
+};
+
+const parseScenarioFromApi = (raw: unknown): SavedScenario | null => {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const candidate = raw as Record<string, unknown>;
+  const { id, name, createdAt, assumptions } = candidate;
+  if (typeof id !== 'string' || typeof name !== 'string' || typeof createdAt !== 'string') {
+    return null;
+  }
+  if (!assumptions || typeof assumptions !== 'object') {
+    return null;
+  }
+  return {
+    id,
+    name,
+    createdAt,
+    assumptions: deepClone(assumptions as Assumptions),
+  };
 };
 
 type MetricCard = {
@@ -112,7 +160,15 @@ const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
 
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
-  const [percentExpenseValues, setPercentExpenseValues] = useState<Record<string, number>>(() => deriveInitialPercentExpenses());
+  const [percentExpenseValues, setPercentExpenseValues] = useState<Record<string, number>>(() =>
+    derivePercentExpenseValues(baselineAssumptions),
+  );
+  const [scenarios, setScenarios] = useState<SavedScenario[]>([]);
+  const [isLoadingScenarios, setIsLoadingScenarios] = useState(false);
+  const [isSavingScenario, setIsSavingScenario] = useState(false);
+  const [scenarioName, setScenarioName] = useState('');
+  const [scenarioError, setScenarioError] = useState<string | null>(null);
+  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
 
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
@@ -132,6 +188,42 @@ function App() {
 
     return { waterfallData: data, waterfallDomain: domain };
   }, [metrics]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchScenarios = async () => {
+      setIsLoadingScenarios(true);
+      try {
+        const response = await fetch(buildScenarioUrl('/api/scenarios'));
+        const payload = (await response.json().catch(() => ({}))) as { scenarios?: unknown; message?: string };
+        if (!response.ok) {
+          throw new Error(payload?.message ?? 'Unable to load scenarios');
+        }
+        const parsedScenarios: SavedScenario[] = Array.isArray(payload.scenarios)
+          ? payload.scenarios
+              .map((entry: unknown) => parseScenarioFromApi(entry))
+              .filter((entry): entry is SavedScenario => entry != null)
+          : [];
+        if (isMounted) {
+          setScenarios(parsedScenarios);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setScenarioError(error instanceof Error ? error.message : 'Unable to load scenarios');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingScenarios(false);
+        }
+      }
+    };
+
+    fetchScenarios();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!Object.keys(percentExpenseValues).length || metrics.grossRentAnnual <= 0) {
@@ -289,6 +381,70 @@ function App() {
     });
   };
 
+  const handleScenarioSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void handleSaveScenario();
+  };
+
+  const handleSaveScenario = async (): Promise<void> => {
+    const trimmedName = scenarioName.trim();
+    if (!trimmedName) {
+      setScenarioError('Please provide a scenario name.');
+      return;
+    }
+    setIsSavingScenario(true);
+    setScenarioError(null);
+    try {
+      const response = await fetch(buildScenarioUrl('/api/scenarios'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: trimmedName, assumptions: deepClone(assumptions) }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { scenario?: unknown; message?: string };
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Unable to save scenario');
+      }
+      const savedScenario = parseScenarioFromApi(payload.scenario);
+      if (!savedScenario) {
+        throw new Error('Received malformed scenario payload');
+      }
+      setScenarios((prev) => [savedScenario, ...prev.filter((scenario) => scenario.id !== savedScenario.id)]);
+      setScenarioName('');
+      setActiveScenarioId(savedScenario.id);
+    } catch (error) {
+      setScenarioError(error instanceof Error ? error.message : 'Unable to save scenario');
+    } finally {
+      setIsSavingScenario(false);
+    }
+  };
+
+  const handleApplyScenario = (scenario: SavedScenario) => {
+    const nextAssumptions = deepClone(scenario.assumptions);
+    setAssumptions(nextAssumptions);
+    setPercentExpenseValues(derivePercentExpenseValues(nextAssumptions));
+    setActiveScenarioId(scenario.id);
+    setScenarioError(null);
+  };
+
+  const handleDeleteScenario = async (scenarioId: string): Promise<void> => {
+    try {
+      setScenarioError(null);
+      const response = await fetch(buildScenarioUrl(`/api/scenarios/${scenarioId}`), { method: 'DELETE' });
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Unable to delete scenario');
+      }
+      setScenarios((prev) => prev.filter((scenario) => scenario.id !== scenarioId));
+      if (activeScenarioId === scenarioId) {
+        setActiveScenarioId(null);
+      }
+    } catch (error) {
+      setScenarioError(error instanceof Error ? error.message : 'Unable to delete scenario');
+    }
+  };
+
   const assumptionCards: MetricCard[] = [
     {
       label: 'Capex Adjusted Purchase Price',
@@ -339,6 +495,67 @@ function App() {
       </header>
 
       <section className="panel-grid">
+        <div className="panel scenario-panel">
+          <div className="panel-header">
+            <h2>Scenario Library</h2>
+            <p>Save and share assumptions so anyone can load them later.</p>
+          </div>
+          <form className="scenario-form" onSubmit={handleScenarioSubmit}>
+            <label htmlFor="scenarioName">Scenario Name</label>
+            <div className="scenario-input-row">
+              <input
+                id="scenarioName"
+                type="text"
+                value={scenarioName}
+                placeholder="e.g. Optimistic Lease-Up"
+                onChange={(event) => {
+                  setScenarioName(event.target.value);
+                  if (scenarioError) {
+                    setScenarioError(null);
+                  }
+                }}
+              />
+              <button type="submit" disabled={isSavingScenario || !scenarioName.trim()}>
+                {isSavingScenario ? 'Saving...' : 'Save Scenario'}
+              </button>
+            </div>
+          </form>
+          {scenarioError && <p className="scenario-error">{scenarioError}</p>}
+          <div className="scenario-list">
+            {isLoadingScenarios ? (
+              <p className="scenario-muted">Loading scenarios...</p>
+            ) : scenarios.length === 0 ? (
+              <p className="scenario-muted">No saved scenarios yet.</p>
+            ) : (
+              scenarios.map((scenario) => (
+                <div
+                  key={scenario.id}
+                  className={`scenario-item${activeScenarioId === scenario.id ? ' active' : ''}`}
+                >
+                  <button
+                    type="button"
+                    className="scenario-load"
+                    onClick={() => handleApplyScenario(scenario)}
+                  >
+                    <span className="scenario-name">{scenario.name}</span>
+                    <span className="scenario-timestamp">{formatScenarioTimestamp(scenario.createdAt)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="scenario-delete"
+                    aria-label={`Delete ${scenario.name}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleDeleteScenario(scenario.id);
+                    }}
+                  >
+                    X
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
         <div className="panel">
           <div className="panel-header">
             <h2>Capital Stack</h2>
