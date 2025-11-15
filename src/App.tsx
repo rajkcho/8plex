@@ -135,33 +135,28 @@ const MetricCardView = ({ card }: MetricCardViewProps) => {
 
   return (
     <div className="metric-card">
+      {card.tooltip && (
+        <button
+          type="button"
+          className="metric-info-button"
+          aria-label={`What is ${card.tooltip.title}?`}
+          aria-describedby={tooltipId}
+          onMouseEnter={showTooltip}
+          onMouseLeave={hideTooltip}
+          onPointerEnter={showTooltip}
+          onPointerLeave={hideTooltip}
+          onFocus={showTooltip}
+          onBlur={hideTooltip}
+        >
+          <span aria-hidden="true">?</span>
+          <div id={tooltipId} className="metric-tooltip" role="tooltip" data-visible={isTooltipVisible}>
+            <p className="metric-tooltip-title">{card.tooltip.title}</p>
+            <p className="metric-tooltip-text">{card.tooltip.description}</p>
+          </div>
+        </button>
+      )}
       <div className="metric-card-header">
         <p className="metric-label">{card.label}</p>
-        {card.tooltip && (
-          <button
-            type="button"
-            className="metric-info-button"
-            aria-label={`What is ${card.tooltip.title}?`}
-            aria-describedby={tooltipId}
-            onMouseEnter={showTooltip}
-            onMouseLeave={hideTooltip}
-            onPointerEnter={showTooltip}
-            onPointerLeave={hideTooltip}
-            onFocus={showTooltip}
-            onBlur={hideTooltip}
-          >
-            <span aria-hidden="true">?</span>
-            <div
-              id={tooltipId}
-              className="metric-tooltip"
-              role="tooltip"
-              data-visible={isTooltipVisible}
-            >
-              <p className="metric-tooltip-title">{card.tooltip.title}</p>
-              <p className="metric-tooltip-text">{card.tooltip.description}</p>
-            </div>
-          </button>
-        )}
       </div>
       <p className="metric-value">{card.format(card.value)}</p>
       {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
