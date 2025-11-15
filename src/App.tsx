@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import './App.css';
 import {
-  ComposedChart,
+  BarChart,
   Bar,
-  Customized,
-  Rectangle,
+  Cell,
+  LabelList,
   ReferenceLine,
   ResponsiveContainer,
   XAxis,
@@ -13,8 +13,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts';
-import type { TooltipProps } from 'recharts';
-import type { RectRadius } from 'recharts/types/shape/Rectangle';
+import type { TooltipProps, LabelProps } from 'recharts';
 
 const baselineMetrics = calculateMetrics(loadBaselineAssumptions());
 
@@ -37,17 +36,15 @@ type MetricCard = {
   subtitle?: string;
 };
 
-type WaterfallPoint = {
+type CashFlowBar = {
   name: string;
   value: number;
-  start: number;
-  end: number;
   color: string;
   isTotal?: boolean;
 };
 
 type WaterfallTooltipProps = TooltipProps<number, string> & {
-  payload?: Array<{ payload: WaterfallPoint }>;
+  payload?: Array<{ payload: CashFlowBar }>;
 };
 
 const WaterfallTooltip = ({ active, payload }: WaterfallTooltipProps) => {
@@ -55,97 +52,30 @@ const WaterfallTooltip = ({ active, payload }: WaterfallTooltipProps) => {
     return null;
   }
 
-  const item = payload[0].payload as WaterfallPoint;
+  const item = payload[0].payload as CashFlowBar;
 
   return (
     <div className="chart-tooltip">
       <strong>{item.name}</strong>
       <span>{item.isTotal ? 'Net Cash Flow' : 'Change'}: {currencyFormatter.format(item.value)}</span>
-      {!item.isTotal && <span>Annual Position: {currencyFormatter.format(item.end)}</span>}
-      {item.isTotal && <span>Annual Net: {currencyFormatter.format(item.end)}</span>}
     </div>
   );
 };
 
-const WaterfallBars = ({ data, xAxisMap, yAxisMap, offset }: { data: WaterfallPoint[] } & Record<string, any>) => {
-  if (!xAxisMap || !yAxisMap) {
+const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
+  if (x == null || y == null || width == null || value == null) {
     return null;
   }
 
-  const xAxis = Object.values(xAxisMap)[0] as any;
-  const yAxis = Object.values(yAxisMap)[0] as any;
-
-  if (!xAxis || !yAxis || !offset) {
-    return null;
-  }
-
-  const xScale = xAxis.scale as ((value: string) => number) & { bandwidth?: () => number };
-  const yScale = yAxis.scale as (value: number) => number;
-
-  if (typeof xScale !== 'function' || typeof yScale !== 'function') {
-    return null;
-  }
-
-  const rawBandwidth =
-    typeof xAxis.bandwidth === 'number'
-      ? xAxis.bandwidth
-      : typeof xScale.bandwidth === 'function'
-        ? xScale.bandwidth()
-        : 0;
-
-  const barWidth = rawBandwidth > 0 ? rawBandwidth * 0.55 : 28;
+  const numericValue = Number(value);
+  const isPositive = numericValue >= 0;
+  const labelY = isPositive ? y - 8 : y + 20;
+  const labelColor = isPositive ? '#0f172a' : '#b91c1c';
 
   return (
-    <g>
-      {data.map((entry, index) => {
-        const xValue = xScale(entry.name);
-        if (typeof xValue !== 'number') {
-          return null;
-        }
-        const barX = offset.left + xValue + (rawBandwidth - barWidth) / 2;
-        const topValue = Math.max(entry.start, entry.end);
-        const bottomValue = Math.min(entry.start, entry.end);
-        const yTop = offset.top + yScale(topValue);
-        const yBottom = offset.top + yScale(bottomValue);
-        const height = Math.abs(yBottom - yTop) || 2;
-        const totalRadius: RectRadius = [10, 10, 10, 10];
-        const positiveRadius: RectRadius = [10, 10, 2, 2];
-        const negativeRadius: RectRadius = [2, 2, 10, 10];
-        const radius: RectRadius = entry.isTotal ? totalRadius : entry.value >= 0 ? positiveRadius : negativeRadius;
-        const labelY = Math.min(yTop, yBottom) - 8;
-        const labelColor = entry.isTotal ? '#064e3b' : entry.value >= 0 ? '#0f172a' : '#b91c1c';
-
-        const nextEntry = data[index + 1];
-        const nextXValue = nextEntry ? xScale(nextEntry.name) : null;
-
-        return (
-          <g key={entry.name}>
-            <Rectangle
-              x={barX}
-              y={Math.min(yTop, yBottom)}
-              width={barWidth}
-              height={Math.max(height, 2)}
-              fill={entry.color}
-              radius={radius}
-            />
-            <text x={barX + barWidth / 2} y={labelY} textAnchor="middle" fill={labelColor} fontSize={12} fontWeight={600}>
-              {currencyFormatter.format(entry.isTotal ? entry.end : entry.value)}
-            </text>
-            {nextEntry && typeof nextXValue === 'number' && (
-              <line
-                x1={barX + barWidth}
-                x2={offset.left + nextXValue + (rawBandwidth - barWidth) / 2}
-                y1={offset.top + yScale(entry.end)}
-                y2={offset.top + yScale(entry.end)}
-                stroke="#cbd5f5"
-                strokeWidth={2}
-                strokeDasharray="4"
-              />
-            )}
-          </g>
-        );
-      })}
-    </g>
+    <text x={(x as number) + (width as number) / 2} y={labelY} textAnchor="middle" fill={labelColor} fontSize={12} fontWeight={600}>
+      {currencyFormatter.format(numericValue)}
+    </text>
   );
 };
 
@@ -154,55 +84,21 @@ function App() {
 
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
-    const rentAnnual = metrics.grossRentAnnual;
-    const otherIncomeAnnual = metrics.otherIncomeAnnual;
-    const opexAnnual = metrics.operatingExpensesAnnual;
-    const debtAnnual = metrics.debtServiceAnnual;
-
-    const steps: Omit<WaterfallPoint, 'start' | 'end'>[] = [
-      { name: 'Gross Rent', value: rentAnnual, color: '#0ea5e9' },
-      { name: 'Other Income', value: otherIncomeAnnual, color: '#38bdf8' },
-      { name: 'Operating Expenses', value: -opexAnnual, color: '#fb7185' },
-      { name: 'Debt Service', value: -debtAnnual, color: '#f97316' },
+    const data: CashFlowBar[] = [
+      { name: 'Gross Rent', value: metrics.grossRentAnnual, color: '#0ea5e9' },
+      { name: 'Other Income', value: metrics.otherIncomeAnnual, color: '#38bdf8' },
+      { name: 'Operating Expenses', value: -metrics.operatingExpensesAnnual, color: '#fb7185' },
+      { name: 'Debt Service', value: -metrics.debtServiceAnnual, color: '#f97316' },
+      { name: 'Net Cash Flow', value: metrics.cashFlow, color: '#16a34a', isTotal: true },
     ];
 
-    let cumulative = 0;
-    const breakdown: WaterfallPoint[] = steps.map((step) => {
-      const start = cumulative;
-      const end = cumulative + step.value;
-      cumulative = end;
-      return {
-        ...step,
-        start,
-        end,
-      };
-    });
+    const values = data.map((item) => item.value);
+    const minValue = Math.min(0, ...values);
+    const maxValue = Math.max(0, ...values);
+    const paddingBase = Math.max(Math.abs(minValue), Math.abs(maxValue), 1) * 0.1;
+    const domain: [number, number] = [minValue - paddingBase, maxValue + paddingBase];
 
-    breakdown.push({
-      name: 'Net Cash Flow',
-      value: cumulative,
-      start: 0,
-      end: cumulative,
-      color: '#16a34a',
-      isTotal: true,
-    });
-
-    const extremes = breakdown.reduce(
-      (acc, point) => ({
-        min: Math.min(acc.min, point.start, point.end),
-        max: Math.max(acc.max, point.start, point.end),
-      }),
-      { min: 0, max: 0 },
-    );
-
-    const padding = Math.max(Math.abs(extremes.max), Math.abs(extremes.min)) * 0.1;
-    const domainMin = Math.min(0, extremes.min - padding);
-    const domainMax = Math.max(0, extremes.max + padding);
-
-    return {
-      waterfallData: breakdown,
-      waterfallDomain: [domainMin, domainMax] as [number, number],
-    };
+    return { waterfallData: data, waterfallDomain: domain };
   }, [metrics]);
 
   const handlePurchasePriceChange = (value: number) => {
@@ -496,15 +392,19 @@ function App() {
             <p>See how yearly income offsets expenses and debt service.</p>
           </div>
           <ResponsiveContainer width="100%" height={360}>
-            <ComposedChart data={waterfallData}>
+            <BarChart data={waterfallData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#d3e1ff" />
               <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 12 }} />
               <YAxis domain={waterfallDomain} tickFormatter={(value) => currencyFormatter.format(value)} tick={{ fill: '#475569', fontSize: 12 }} />
               <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(14,165,233,0.08)' }} />
               <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
-              <Bar dataKey="value" fill="transparent" isAnimationActive={false} />
-              <Customized component={<WaterfallBars data={waterfallData} />} />
-            </ComposedChart>
+              <Bar dataKey="value" radius={[10, 10, 10, 10]}>
+                {waterfallData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.isTotal ? '#16a34a' : entry.color} />
+                ))}
+                <LabelList dataKey="value" content={<WaterfallLabel />} />
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </section>
