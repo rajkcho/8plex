@@ -173,7 +173,10 @@ const derivePercentExpenseValues = (source: Assumptions): Record<string, number>
   Object.entries(source.operatingExpenses ?? {}).forEach(([label, amount]) => {
     const normalized = normalizeExpenseLabel(label);
     if (percentageExpenseLabels.has(normalized)) {
-      result[normalized] = Number(((amount / grossRentAnnual) * 100).toFixed(2));
+      const percentValue = (amount / grossRentAnnual) * 100;
+      if (Number.isFinite(percentValue)) {
+        result[normalized] = percentValue;
+      }
     }
   });
   return result;
