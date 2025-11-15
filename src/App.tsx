@@ -66,7 +66,7 @@ const normalizeExpenseLabel = (label: string): string => sanitizeExpenseLabel(la
 
 const slugifyLabel = (label: string): string => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-const percentageExpenseLabels = new Set(['vacancy and bad debt']);
+const percentageExpenseLabels = new Set(['vacancy and bad debt', 'management & salaries']);
 
 type MarketRentRow = {
   city: string;
@@ -536,6 +536,18 @@ function App() {
     });
   };
 
+  const handleBrokerFeeChange = (value: number) => {
+    setAssumptions((prev) => {
+      const ratio = (prev.loanToValue ?? 1 - (prev.depositPct ?? 0)) || 0.75;
+      const totalCost = prev.purchasePrice + value;
+      return {
+        ...prev,
+        brokerFee: value,
+        loanAmount: totalCost * ratio,
+      };
+    });
+  };
+
   const handleInterestChange = (value: number) => {
     setAssumptions((prev) => ({ ...prev, interestRate: value }));
   };
@@ -560,6 +572,34 @@ function App() {
   const totalOperatingExpenses = useMemo(() => {
     const expenses = assumptions.operatingExpenses ?? {};
     return Object.values(expenses).reduce((sum, value) => sum + value, 0);
+  }, [assumptions.operatingExpenses]);
+  const operatingExpenseEntries = useMemo(() => {
+    const expenses = Object.entries(assumptions.operatingExpenses ?? {});
+    if (!expenses.length) {
+      return expenses;
+    }
+    const managementIndex = expenses.findIndex(
+      ([label]) => normalizeExpenseLabel(label) === 'management & salaries',
+    );
+    const vacancyIndex = expenses.findIndex(
+      ([label]) => normalizeExpenseLabel(label) === 'vacancy and bad debt',
+    );
+    if (managementIndex === -1 || vacancyIndex === -1) {
+      return expenses;
+    }
+    if (managementIndex === vacancyIndex + 1) {
+      return expenses;
+    }
+    const [managementEntry] = expenses.splice(managementIndex, 1);
+    const updatedVacancyIndex = expenses.findIndex(
+      ([label]) => normalizeExpenseLabel(label) === 'vacancy and bad debt',
+    );
+    if (updatedVacancyIndex === -1) {
+      expenses.push(managementEntry);
+      return expenses;
+    }
+    expenses.splice(updatedVacancyIndex + 1, 0, managementEntry);
+    return expenses;
   }, [assumptions.operatingExpenses]);
 
   const handleOperatingExpenseChange = (label: string, value: number) => {
@@ -897,6 +937,19 @@ function App() {
               </div>
             </div>
             <div className="input-control">
+              <label htmlFor="brokerFee">Broker Fee</label>
+              <div className="currency-input">
+                <span className="prefix">$</span>
+                <input
+                  id="brokerFee"
+                  type="text"
+                  inputMode="numeric"
+                  value={formatCurrencyInputValue(assumptions.brokerFee)}
+                  onChange={(event) => handleBrokerFeeChange(parseCurrencyInputValue(event.target.value))}
+                />
+              </div>
+            </div>
+            <div className="input-control">
               <label htmlFor="loanToValue">Loan to Value</label>
               <div className="input-row">
                 <input
@@ -1145,7 +1198,7 @@ function App() {
               <p className="muted">Per year</p>
             </div>
             <div className="expense-list">
-              {Object.entries(assumptions.operatingExpenses ?? {}).map(([label, value]) => {
+              {operatingExpenseEntries.map(([label, value]) => {
                 const displayLabel = sanitizeExpenseLabel(label);
                 const normalizedLabel = normalizeExpenseLabel(label);
                 const isPercentExpense = percentageExpenseLabels.has(normalizedLabel);
