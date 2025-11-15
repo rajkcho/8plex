@@ -212,6 +212,27 @@ const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
   );
 };
 
+type ScenarioComparisonBar = {
+  id: string;
+  name: string;
+  cashFlow: number;
+};
+
+const ScenarioComparisonTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const item = payload[0].payload as ScenarioComparisonBar;
+
+  return (
+    <div className="chart-tooltip">
+      <strong>{item.name}</strong>
+      <span>Net Cash Flow: {currencyFormatter.format(item.cashFlow)}</span>
+    </div>
+  );
+};
+
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
   const [percentExpenseValues, setPercentExpenseValues] = useState<Record<string, number>>(() =>
@@ -242,6 +263,27 @@ function App() {
 
     return { waterfallData: data, waterfallDomain: domain };
   }, [metrics]);
+  const { scenarioComparisonData, scenarioComparisonDomain } = useMemo(() => {
+    if (!scenarios.length) {
+      return {
+        scenarioComparisonData: [] as ScenarioComparisonBar[],
+        scenarioComparisonDomain: [0, 0] as [number, number],
+      };
+    }
+    const data = scenarios.map((scenario) => ({
+      id: scenario.id,
+      name: scenario.name,
+      cashFlow: calculateMetrics(scenario.assumptions).cashFlow,
+    }));
+    const values = data.map((item) => item.cashFlow);
+    const minValue = Math.min(0, ...values);
+    const maxValue = Math.max(0, ...values);
+    const paddingBase = Math.max(Math.abs(minValue), Math.abs(maxValue), 1) * 0.15;
+    return {
+      scenarioComparisonData: data,
+      scenarioComparisonDomain: [minValue - paddingBase, maxValue + paddingBase] as [number, number],
+    };
+  }, [scenarios]);
 
   useEffect(() => {
     let isMounted = true;
@@ -928,6 +970,38 @@ function App() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </div>
+        <div className="chart-card">
+          <div className="chart-header">
+            <h3>Scenario Net Cash Flow</h3>
+            <p>Compare annual net cash flow for saved cases.</p>
+          </div>
+          {scenarioComparisonData.length === 0 ? (
+            <p className="chart-empty">Save scenarios to compare their net cash flow.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={360}>
+              <BarChart data={scenarioComparisonData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#d3e1ff" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: '#475569', fontSize: 12 }}
+                  height={60}
+                  angle={-25}
+                  textAnchor="end"
+                  interval={0}
+                />
+                <YAxis domain={scenarioComparisonDomain} tickFormatter={currencyFormatter.format} />
+                <Tooltip content={<ScenarioComparisonTooltip />} cursor={{ fill: 'rgba(22,163,74,0.08)' }} />
+                <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
+                <Bar dataKey="cashFlow" radius={[10, 10, 10, 10]}>
+                  {scenarioComparisonData.map((entry) => (
+                    <Cell key={entry.id} fill={entry.cashFlow >= 0 ? '#16a34a' : '#dc2626'} />
+                  ))}
+                  <LabelList dataKey="cashFlow" content={<WaterfallLabel />} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </section>
     </div>
