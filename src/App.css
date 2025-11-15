@@ -39,9 +39,9 @@
 }
 
 .app-logo {
-  width: 25%;
+  width: 28.75%;
   height: auto;
-  max-width: 350px;
+  max-width: 403px;
   object-fit: contain;
   display: block;
   flex: 0 0 auto;

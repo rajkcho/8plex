@@ -37,6 +37,28 @@ const percentFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 });
 
+const formatCurrencyInputValue = (value?: number | null): string => {
+  if (value == null || Number.isNaN(value)) {
+    return '';
+  }
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+};
+
+const parseCurrencyInputValue = (raw: string): number => {
+  if (!raw) {
+    return 0;
+  }
+  const sanitized = raw.replace(/[^0-9.-]/g, '');
+  if (!sanitized || sanitized === '-' || sanitized === '.' || sanitized === '-.' || sanitized === '.-') {
+    return 0;
+  }
+  const parsed = Number(sanitized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 const sanitizeExpenseLabel = (label: string): string =>
   label.replace(/@\s*\d+%/gi, '').replace(/\s+\d+%$/gi, '').replace(/\s{2,}/g, ' ').trim();
 
@@ -866,9 +888,10 @@ function App() {
                 <div className="currency-input">
                   <span className="prefix">$</span>
                   <input
-                    type="number"
-                    value={Math.round(assumptions.purchasePrice)}
-                    onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={formatCurrencyInputValue(assumptions.purchasePrice)}
+                    onChange={(event) => handlePurchasePriceChange(parseCurrencyInputValue(event.target.value))}
                   />
                 </div>
               </div>
@@ -1007,9 +1030,10 @@ function App() {
                       <div className="currency-input">
                         <span className="prefix">$</span>
                         <input
-                          type="number"
-                          value={unit.rent}
-                          onChange={(event) => handleUnitRentChange(index, Number(event.target.value))}
+                          type="text"
+                          inputMode="numeric"
+                          value={formatCurrencyInputValue(unit.rent)}
+                          onChange={(event) => handleUnitRentChange(index, parseCurrencyInputValue(event.target.value))}
                         />
                       </div>
                     </label>
@@ -1029,10 +1053,11 @@ function App() {
                     <div className="currency-input">
                       <span className="prefix">$</span>
                       <input
-                        type="number"
-                        value={item.monthlyAmount}
+                        type="text"
+                        inputMode="numeric"
+                        value={formatCurrencyInputValue(item.monthlyAmount)}
                         onChange={(event) => {
-                          const value = Number(event.target.value);
+                          const value = parseCurrencyInputValue(event.target.value);
                           setAssumptions((prev) => {
                             const updated = prev.otherIncomeItems.map((income, idx) =>
                               idx === index ? { ...income, monthlyAmount: value } : income,
@@ -1144,9 +1169,12 @@ function App() {
                         <div className="currency-input">
                           <span className="prefix">$</span>
                           <input
-                            type="number"
-                            value={Math.round(value)}
-                            onChange={(event) => handleOperatingExpenseChange(label, Number(event.target.value))}
+                            type="text"
+                            inputMode="numeric"
+                            value={formatCurrencyInputValue(value)}
+                            onChange={(event) =>
+                              handleOperatingExpenseChange(label, parseCurrencyInputValue(event.target.value))
+                            }
                           />
                         </div>
                       )}
