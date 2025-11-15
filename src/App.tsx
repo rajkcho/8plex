@@ -994,7 +994,7 @@ function App() {
                   textAnchor="end"
                   interval={0}
                 />
-                <YAxis domain={scenarioComparisonDomain} tickFormatter={currencyFormatter.format} />
+                <YAxis domain={scenarioComparisonDomain} hide />
                 <Tooltip content={<ScenarioComparisonTooltip />} cursor={{ fill: 'rgba(22,163,74,0.08)' }} />
                 <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
                 <Bar dataKey="cashFlow" radius={[10, 10, 10, 10]}>
