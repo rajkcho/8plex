@@ -1,25 +1,19 @@
 import { useMemo, useState } from 'react';
-import {
-  calculateMetrics,
-  loadBaselineAssumptions,
-  projectMonthlyCashFlows,
-  type Assumptions,
-  type UnitAssumption,
-} from './model/financeModel';
+import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import './App.css';
 import {
-  Line,
-  LineChart,
+  ComposedChart,
+  Bar,
+  Customized,
+  Rectangle,
+  ReferenceLine,
   ResponsiveContainer,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
 } from 'recharts';
+import type { TooltipProps } from 'recharts';
 
 const baselineMetrics = calculateMetrics(loadBaselineAssumptions());
 
@@ -35,8 +29,6 @@ const percentFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 });
 
-const pieColors = ['#1d4ed8', '#0ea5e9', '#fb7185', '#f97316'];
-
 type MetricCard = {
   label: string;
   value: number;
@@ -44,11 +36,166 @@ type MetricCard = {
   subtitle?: string;
 };
 
+type WaterfallPoint = {
+  name: string;
+  value: number;
+  start: number;
+  end: number;
+  color: string;
+  isTotal?: boolean;
+};
+
+const WaterfallTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const item = payload[0].payload as WaterfallPoint;
+
+  return (
+    <div className="chart-tooltip">
+      <strong>{item.name}</strong>
+      <span>{item.isTotal ? 'Net Cash Flow' : 'Change'}: {currencyFormatter.format(item.value)}</span>
+      {!item.isTotal && <span>Run Rate: {currencyFormatter.format(item.end)}</span>}
+      {item.isTotal && <span>Monthly Run Rate: {currencyFormatter.format(item.end)}</span>}
+    </div>
+  );
+};
+
+const WaterfallBars = ({ data, xAxisMap, yAxisMap, offset }: { data: WaterfallPoint[] } & Record<string, any>) => {
+  if (!xAxisMap || !yAxisMap) {
+    return null;
+  }
+
+  const xAxis = Object.values(xAxisMap)[0] as any;
+  const yAxis = Object.values(yAxisMap)[0] as any;
+
+  if (!xAxis || !yAxis || !offset) {
+    return null;
+  }
+
+  const xScale = xAxis.scale as ((value: string) => number) & { bandwidth?: () => number };
+  const yScale = yAxis.scale as (value: number) => number;
+
+  if (typeof xScale !== 'function' || typeof yScale !== 'function') {
+    return null;
+  }
+
+  const rawBandwidth =
+    typeof xAxis.bandwidth === 'number'
+      ? xAxis.bandwidth
+      : typeof xScale.bandwidth === 'function'
+        ? xScale.bandwidth()
+        : 0;
+
+  const barWidth = rawBandwidth > 0 ? rawBandwidth * 0.55 : 28;
+
+  return (
+    <g>
+      {data.map((entry, index) => {
+        const xValue = xScale(entry.name);
+        if (typeof xValue !== 'number') {
+          return null;
+        }
+        const barX = offset.left + xValue + (rawBandwidth - barWidth) / 2;
+        const topValue = Math.max(entry.start, entry.end);
+        const bottomValue = Math.min(entry.start, entry.end);
+        const yTop = offset.top + yScale(topValue);
+        const yBottom = offset.top + yScale(bottomValue);
+        const height = Math.abs(yBottom - yTop) || 2;
+        const radius = entry.isTotal ? [10, 10, 10, 10] : entry.value >= 0 ? [10, 10, 2, 2] : [2, 2, 10, 10];
+        const labelY = entry.value >= 0 ? yTop - 8 : yBottom + 16;
+        const labelColor = entry.value >= 0 ? '#0f172a' : '#b91c1c';
+
+        const nextEntry = data[index + 1];
+        const nextXValue = nextEntry ? xScale(nextEntry.name) : null;
+
+        return (
+          <g key={entry.name}>
+            <Rectangle
+              x={barX}
+              y={Math.min(yTop, yBottom)}
+              width={barWidth}
+              height={Math.max(height, 2)}
+              fill={entry.color}
+              radius={radius}
+            />
+            <text x={barX + barWidth / 2} y={labelY} textAnchor="middle" fill={labelColor} fontSize={12} fontWeight={600}>
+              {currencyFormatter.format(entry.isTotal ? entry.end : entry.value)}
+            </text>
+            {nextEntry && typeof nextXValue === 'number' && (
+              <line
+                x1={barX + barWidth}
+                x2={offset.left + nextXValue + (rawBandwidth - barWidth) / 2}
+                y1={offset.top + yScale(entry.end)}
+                y2={offset.top + yScale(entry.end)}
+                stroke="#cbd5f5"
+                strokeWidth={2}
+                strokeDasharray="4"
+              />
+            )}
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
 
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
-  const monthlyProjection = useMemo(() => projectMonthlyCashFlows(assumptions), [assumptions]);
+  const { waterfallData, waterfallDomain } = useMemo(() => {
+    const rentMonthly = metrics.grossRentAnnual / 12;
+    const otherIncomeMonthly = metrics.otherIncomeAnnual / 12;
+    const opexMonthly = metrics.operatingExpensesAnnual / 12;
+    const debtMonthly = metrics.debtServiceAnnual / 12;
+
+    const steps: Omit<WaterfallPoint, 'start' | 'end'>[] = [
+      { name: 'Rental Income', value: rentMonthly, color: '#0ea5e9' },
+      { name: 'Other Income', value: otherIncomeMonthly, color: '#38bdf8' },
+      { name: 'Operating Expenses', value: -opexMonthly, color: '#fb7185' },
+      { name: 'Debt Service', value: -debtMonthly, color: '#f97316' },
+    ];
+
+    let cumulative = 0;
+    const breakdown: WaterfallPoint[] = steps.map((step) => {
+      const start = cumulative;
+      const end = cumulative + step.value;
+      cumulative = end;
+      return {
+        ...step,
+        start,
+        end,
+      };
+    });
+
+    breakdown.push({
+      name: 'Net Cash Flow',
+      value: cumulative,
+      start: 0,
+      end: cumulative,
+      color: cumulative >= 0 ? '#16a34a' : '#dc2626',
+      isTotal: true,
+    });
+
+    const extremes = breakdown.reduce(
+      (acc, point) => ({
+        min: Math.min(acc.min, point.start, point.end),
+        max: Math.max(acc.max, point.start, point.end),
+      }),
+      { min: 0, max: 0 },
+    );
+
+    const padding = Math.max(Math.abs(extremes.max), Math.abs(extremes.min)) * 0.1;
+    const domainMin = Math.min(0, extremes.min - padding);
+    const domainMax = Math.max(0, extremes.max + padding);
+
+    return {
+      waterfallData: breakdown,
+      waterfallDomain: [domainMin, domainMax] as [number, number],
+    };
+  }, [metrics]);
 
   const handlePurchasePriceChange = (value: number) => {
     setAssumptions((prev) => {
@@ -138,13 +285,6 @@ function App() {
     { label: 'Cap Rate', value: metrics.capRate, format: percentFormatter.format },
   ];
 
-  const pieData = [
-    { name: 'Gross Rent', value: metrics.grossRentAnnual },
-    { name: 'Other Income', value: metrics.otherIncomeAnnual },
-    { name: 'Operating Expenses', value: metrics.operatingExpensesAnnual },
-    { name: 'Debt Service', value: metrics.debtServiceAnnual },
-  ];
-
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -203,7 +343,7 @@ function App() {
               <span className="suffix">%</span>
             </div>
           </div>
-          <div className="input-row compact">
+          <div className="input-stack">
             <div className="input-control">
               <label htmlFor="interestRate">Interest Rate</label>
               <div className="input-row">
@@ -344,34 +484,19 @@ function App() {
       <section className="charts-grid">
         <div className="chart-card">
           <div className="chart-header">
-            <h3>Income vs Expenses</h3>
-            <p>Annualized dollars sourced from baseline workbook.</p>
+            <h3>Monthly Cash Flow Waterfall</h3>
+            <p>Track how recurring income covers expenses and debt service.</p>
           </div>
-          <ResponsiveContainer width="100%" height={320}>
-            <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={80} outerRadius={120} paddingAngle={2}>
-                {pieData.map((entry, index) => (
-                  <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value: number) => currencyFormatter.format(value)} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="chart-card">
-          <div className="chart-header">
-            <h3>Monthly Cash Flow</h3>
-            <p>Projected over the next 12 months.</p>
-          </div>
-          <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={monthlyProjection}>
+          <ResponsiveContainer width="100%" height={360}>
+            <ComposedChart data={waterfallData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#d3e1ff" />
-              <XAxis dataKey="monthIndex" tickFormatter={(value) => `M${value}`} />
-              <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(value: number) => currencyFormatter.format(value)} labelFormatter={(label) => `Month ${label}`} />
-              <Line type="monotone" dataKey="cashFlow" stroke="#0ea5e9" strokeWidth={3} dot={{ strokeWidth: 2 }} />
-            </LineChart>
+              <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 12 }} />
+              <YAxis domain={waterfallDomain} tickFormatter={(value) => currencyFormatter.format(value)} tick={{ fill: '#475569', fontSize: 12 }} />
+              <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(14,165,233,0.08)' }} />
+              <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
+              <Bar dataKey="value" fill="transparent" isAnimationActive={false} />
+              <Customized component={<WaterfallBars data={waterfallData} />} />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </section>

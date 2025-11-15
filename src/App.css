@@ -106,6 +106,12 @@
   gap: 1rem;
 }
 
+.input-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
 .assumption-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -234,6 +240,22 @@
 .chart-header p {
   margin: 0.2rem 0 1rem;
   color: #64748b;
+}
+
+.chart-tooltip {
+  background: rgba(15, 23, 42, 0.95);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  box-shadow: 0 15px 30px rgba(15, 23, 42, 0.25);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chart-tooltip strong {
+  font-size: 0.95rem;
 }
 
 @media (max-width: 768px) {
