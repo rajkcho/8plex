@@ -16,6 +16,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import type { TooltipProps, LabelProps } from 'recharts';
+import rentsCsv from '../rents.csv?raw';
 
 const baselineAssumptions = loadBaselineAssumptions();
 const baselineMetrics = calculateMetrics(baselineAssumptions);
@@ -43,6 +44,94 @@ const normalizeExpenseLabel = (label: string): string => sanitizeExpenseLabel(la
 const slugifyLabel = (label: string): string => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
 const percentageExpenseLabels = new Set(['vacancy and bad debt']);
+
+type MarketRentRow = {
+  city: string;
+  bachelor: number;
+  oneBedroom: number;
+  twoBedroom: number;
+  threeBedroom: number;
+};
+
+const parseCsvLine = (line: string): string[] => {
+  const sanitizedLine = line.replace(/^\uFEFF/, '');
+  const values: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < sanitizedLine.length; index += 1) {
+    const char = sanitizedLine[index];
+    if (char === '"') {
+      if (inQuotes && sanitizedLine[index + 1] === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  values.push(current.trim());
+  return values;
+};
+
+const parseCurrencyValue = (value: string): number => {
+  const cleaned = value.replace(/[^\d.-]/g, '');
+  const parsed = Number(cleaned || '0');
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const parseMarketRentCsv = (csv: string): MarketRentRow[] => {
+  if (!csv) {
+    return [];
+  }
+
+  const lines = csv
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length);
+
+  if (!lines.length) {
+    return [];
+  }
+
+  const headerCells = parseCsvLine(lines[0]).map((cell) => cell.toLowerCase());
+  const columnIndexes = {
+    city: headerCells.findIndex((cell) => cell === 'city'),
+    bachelor: headerCells.findIndex((cell) => cell === 'bachelor'),
+    oneBedroom: headerCells.findIndex((cell) => cell === '1br'),
+    twoBedroom: headerCells.findIndex((cell) => cell === '2br'),
+    threeBedroom: headerCells.findIndex((cell) => cell === '3br'),
+  };
+
+  if (Object.values(columnIndexes).some((value) => value === -1)) {
+    return [];
+  }
+
+  return lines.slice(1).reduce<MarketRentRow[]>((acc, line) => {
+    const cells = parseCsvLine(line);
+    const city = cells[columnIndexes.city] ?? '';
+    if (!city) {
+      return acc;
+    }
+
+    acc.push({
+      city,
+      bachelor: parseCurrencyValue(cells[columnIndexes.bachelor] ?? ''),
+      oneBedroom: parseCurrencyValue(cells[columnIndexes.oneBedroom] ?? ''),
+      twoBedroom: parseCurrencyValue(cells[columnIndexes.twoBedroom] ?? ''),
+      threeBedroom: parseCurrencyValue(cells[columnIndexes.threeBedroom] ?? ''),
+    });
+    return acc;
+  }, []);
+};
+
+const marketRentData = parseMarketRentCsv(rentsCsv);
 
 const computeGrossRentAnnual = (assumptions: Assumptions): number => {
   const unitMix = assumptions.unitMix ?? [];
@@ -295,6 +384,7 @@ function App() {
   const [scenarioName, setScenarioName] = useState('');
   const [scenarioError, setScenarioError] = useState<string | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+  const [selectedMarketCity, setSelectedMarketCity] = useState<string>(marketRentData[0]?.city ?? '');
 
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
@@ -335,6 +425,8 @@ function App() {
       scenarioComparisonDomain: [minValue - paddingBase, maxValue + paddingBase] as [number, number],
     };
   }, [scenarios]);
+  const currentMarketRentCity = selectedMarketCity || marketRentData[0]?.city || '';
+  const selectedMarketRentRow = marketRentData.find((row) => row.city === currentMarketRentCity);
 
   useEffect(() => {
     let isMounted = true;
@@ -1001,6 +1093,65 @@ function App() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="panel full-width market-rent-panel">
+            <div className="panel-header">
+              <h2>Market Rent Data</h2>
+              <p>Select a city to review market rent benchmarks.</p>
+            </div>
+            {marketRentData.length === 0 ? (
+              <p className="muted">Market rent data is unavailable.</p>
+            ) : (
+              <>
+                <div className="market-rent-controls">
+                  <label htmlFor="marketRentCity">
+                    City
+                    <select
+                      id="marketRentCity"
+                      value={currentMarketRentCity}
+                      onChange={(event) => setSelectedMarketCity(event.target.value)}
+                    >
+                      {marketRentData.map((row) => (
+                        <option key={row.city} value={row.city}>
+                          {row.city}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                {selectedMarketRentRow ? (
+                  <table className="market-rent-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Unit Type</th>
+                        <th scope="col">Average Rent</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row">Bachelor</th>
+                        <td>{currencyFormatter.format(selectedMarketRentRow.bachelor)}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">1 Bedroom</th>
+                        <td>{currencyFormatter.format(selectedMarketRentRow.oneBedroom)}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">2 Bedroom</th>
+                        <td>{currencyFormatter.format(selectedMarketRentRow.twoBedroom)}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">3 Bedroom</th>
+                        <td>{currencyFormatter.format(selectedMarketRentRow.threeBedroom)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="muted">Select a city to view rent data.</p>
+                )}
+              </>
+            )}
           </div>
         </div>
       </section>

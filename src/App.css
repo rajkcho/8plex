@@ -68,6 +68,59 @@
   gap: 1.25rem;
 }
 
+.panel.full-width {
+  grid-column: 1 / -1;
+}
+
+.market-rent-panel {
+  gap: 1rem;
+}
+
+.market-rent-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.market-rent-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.market-rent-controls select {
+  border: 1px solid #c7d7f7;
+  border-radius: 0.85rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.95rem;
+  background: #fff;
+}
+
+.market-rent-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.market-rent-table th,
+.market-rent-table td {
+  text-align: left;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.market-rent-table th {
+  font-size: 0.95rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.market-rent-table td {
+  font-weight: 600;
+  color: #0f172a;
+}
+
 .scenario-panel {
   gap: 1rem;
 }
