@@ -619,25 +619,25 @@ function App() {
             <div className="input-control">
               <label htmlFor="interestRate">Interest Rate</label>
               <div className="input-row">
-              <input
-                id="interestRate"
-                type="range"
-                min={2}
-                max={8}
-                step={0.05}
-                value={(assumptions.interestRate ?? 0) * 100}
-                onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
-              />
-              <div className="percent-input">
                 <input
-                  type="number"
-                  value={Number(((assumptions.interestRate ?? 0) * 100).toFixed(2))}
+                  id="interestRate"
+                  type="range"
+                  min={2}
+                  max={8}
+                  step={0.05}
+                  value={(assumptions.interestRate ?? 0) * 100}
                   onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
                 />
-                <span className="suffix">%</span>
+                <div className="percent-input">
+                  <input
+                    type="number"
+                    value={Number(((assumptions.interestRate ?? 0) * 100).toFixed(2))}
+                    onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+                  />
+                  <span className="suffix">%</span>
+                </div>
               </div>
             </div>
-          </div>
             <div className="input-control">
               <label htmlFor="amortYears">Amortization (Years)</label>
               <div className="input-row">
@@ -646,19 +646,19 @@ function App() {
                   type="range"
                   min={15}
                   max={50}
-                step={1}
-                value={assumptions.amortYears}
-                onChange={(event) => handleAmortChange(Number(event.target.value))}
-              />
-              <div className="number-input">
-                <input
-                  type="number"
+                  step={1}
                   value={assumptions.amortYears}
                   onChange={(event) => handleAmortChange(Number(event.target.value))}
                 />
+                <div className="number-input">
+                  <input
+                    type="number"
+                    value={assumptions.amortYears}
+                    onChange={(event) => handleAmortChange(Number(event.target.value))}
+                  />
+                </div>
               </div>
             </div>
-          </div>
           </div>
           <div className="assumption-cards">
             {assumptionCards.map((card) => (
