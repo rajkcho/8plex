@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { FormEvent, SVGProps } from 'react';
+import type { FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
 import mliCalcLogo from '../mlicalclogo.png';
@@ -373,17 +373,6 @@ const ScenarioComparisonTooltip = ({ active, payload }: ScenarioComparisonToolti
     </div>
   );
 };
-
-const CalculatorIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
-    <rect x={4} y={2.5} width={16} height={19} rx={3} />
-    <rect x={7} y={6} width={10} height={3} rx={1.2} fill="currentColor" stroke="none" />
-    <circle cx={9} cy={12.5} r={1.3} />
-    <circle cx={15} cy={12.5} r={1.3} />
-    <circle cx={9} cy={16.5} r={1.3} />
-    <circle cx={15} cy={16.5} r={1.3} />
-  </svg>
-);
 
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
@@ -772,11 +761,7 @@ function App() {
       <header className="app-header">
         <div className="header-top">
           <div className="header-branding">
-            <img src={mliCalcLogo} alt="MLI Calc logo" className="app-logo" />
-            <div className="header-title">
-              <CalculatorIcon className="header-title-icon" aria-hidden="true" focusable="false" />
-              <h1>MLI Calc</h1>
-            </div>
+            <img src={mliCalcLogo} alt="MLI Calc" className="app-logo" />
           </div>
           <div className="baseline-chip">
             Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
@@ -1063,56 +1048,6 @@ function App() {
             </div>
           </div>
 
-          <div className="panel">
-            <div className="panel-header">
-              <h2>Operating Expenses</h2>
-              <p>Control total opex or fine-tune individual categories.</p>
-            </div>
-            <div className="expense-row total">
-              <div>
-                <p>Total Opex</p>
-                <h3>{currencyFormatter.format(totalOperatingExpenses)}</h3>
-              </div>
-              <p className="muted">Per year</p>
-            </div>
-            <div className="expense-list">
-              {Object.entries(assumptions.operatingExpenses ?? {}).map(([label, value]) => {
-                const displayLabel = sanitizeExpenseLabel(label);
-                const normalizedLabel = normalizeExpenseLabel(label);
-                const isPercentExpense = percentageExpenseLabels.has(normalizedLabel);
-                return (
-                  <div key={label} className="expense-item">
-                    <label>
-                      {displayLabel}
-                      {isPercentExpense ? (
-                        <div className="percent-input">
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            step={0.1}
-                            value={percentExpenseValues[normalizedLabel] ?? 0}
-                            onChange={(event) => handlePercentExpenseChange(normalizedLabel, Number(event.target.value))}
-                          />
-                          <span className="suffix">%</span>
-                        </div>
-                      ) : (
-                        <div className="currency-input">
-                          <span className="prefix">$</span>
-                          <input
-                            type="number"
-                            value={Math.round(value)}
-                            onChange={(event) => handleOperatingExpenseChange(label, Number(event.target.value))}
-                          />
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="panel market-rent-panel">
             <div className="panel-header">
               <h2>Market Rent Data</h2>
@@ -1170,6 +1105,56 @@ function App() {
                 )}
               </>
             )}
+          </div>
+
+          <div className="panel">
+            <div className="panel-header">
+              <h2>Operating Expenses</h2>
+              <p>Control total opex or fine-tune individual categories.</p>
+            </div>
+            <div className="expense-row total">
+              <div>
+                <p>Total Opex</p>
+                <h3>{currencyFormatter.format(totalOperatingExpenses)}</h3>
+              </div>
+              <p className="muted">Per year</p>
+            </div>
+            <div className="expense-list">
+              {Object.entries(assumptions.operatingExpenses ?? {}).map(([label, value]) => {
+                const displayLabel = sanitizeExpenseLabel(label);
+                const normalizedLabel = normalizeExpenseLabel(label);
+                const isPercentExpense = percentageExpenseLabels.has(normalizedLabel);
+                return (
+                  <div key={label} className="expense-item">
+                    <label>
+                      {displayLabel}
+                      {isPercentExpense ? (
+                        <div className="percent-input">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            value={percentExpenseValues[normalizedLabel] ?? 0}
+                            onChange={(event) => handlePercentExpenseChange(normalizedLabel, Number(event.target.value))}
+                          />
+                          <span className="suffix">%</span>
+                        </div>
+                      ) : (
+                        <div className="currency-input">
+                          <span className="prefix">$</span>
+                          <input
+                            type="number"
+                            value={Math.round(value)}
+                            onChange={(event) => handleOperatingExpenseChange(label, Number(event.target.value))}
+                          />
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>

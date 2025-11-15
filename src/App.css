@@ -45,22 +45,6 @@
   display: block;
 }
 
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.header-title-icon {
-  width: 2.6rem;
-  height: 2.6rem;
-  padding: 0.4rem;
-  border-radius: 0.9rem;
-  background: linear-gradient(135deg, #bae6fd, #e0f2fe);
-  color: #0f172a;
-  box-shadow: 0 12px 30px rgba(14, 165, 233, 0.25);
-}
-
 .baseline-chip {
   background: #0c4a6e;
   color: #fff;
