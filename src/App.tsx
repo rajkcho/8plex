@@ -14,6 +14,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import type { TooltipProps } from 'recharts';
+import type { RectRadius } from 'recharts/types/shape/Rectangle';
 
 const baselineMetrics = calculateMetrics(loadBaselineAssumptions());
 
@@ -45,7 +46,11 @@ type WaterfallPoint = {
   isTotal?: boolean;
 };
 
-const WaterfallTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+type WaterfallTooltipProps = TooltipProps<number, string> & {
+  payload?: Array<{ payload: WaterfallPoint }>;
+};
+
+const WaterfallTooltip = ({ active, payload }: WaterfallTooltipProps) => {
   if (!active || !payload?.length) {
     return null;
   }
@@ -103,7 +108,10 @@ const WaterfallBars = ({ data, xAxisMap, yAxisMap, offset }: { data: WaterfallPo
         const yTop = offset.top + yScale(topValue);
         const yBottom = offset.top + yScale(bottomValue);
         const height = Math.abs(yBottom - yTop) || 2;
-        const radius = entry.isTotal ? [10, 10, 10, 10] : entry.value >= 0 ? [10, 10, 2, 2] : [2, 2, 10, 10];
+        const totalRadius: RectRadius = [10, 10, 10, 10];
+        const positiveRadius: RectRadius = [10, 10, 2, 2];
+        const negativeRadius: RectRadius = [2, 2, 10, 10];
+        const radius: RectRadius = entry.isTotal ? totalRadius : entry.value >= 0 ? positiveRadius : negativeRadius;
         const labelY = entry.value >= 0 ? yTop - 8 : yBottom + 16;
         const labelColor = entry.value >= 0 ? '#0f172a' : '#b91c1c';
 
