@@ -97,7 +97,7 @@ function App() {
     const values = data.map((item) => item.value);
     const minValue = Math.min(0, ...values);
     const maxValue = Math.max(0, ...values);
-    const paddingBase = Math.max(Math.abs(minValue), Math.abs(maxValue), 1) * 0.1;
+    const paddingBase = Math.max(Math.abs(minValue), Math.abs(maxValue), 1) * 0.15;
     const domain: [number, number] = [minValue - paddingBase, maxValue + paddingBase];
 
     return { waterfallData: data, waterfallDomain: domain };
@@ -391,13 +391,12 @@ function App() {
         <div className="chart-card">
           <div className="chart-header">
             <h3>Annual Cash Flow Waterfall</h3>
-            <p>See how yearly income offsets expenses and debt service.</p>
           </div>
           <ResponsiveContainer width="100%" height={360}>
             <BarChart data={waterfallData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#d3e1ff" />
               <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 12 }} />
-              <YAxis domain={waterfallDomain} tickFormatter={(value) => currencyFormatter.format(value)} tick={{ fill: '#475569', fontSize: 12 }} />
+              <YAxis domain={waterfallDomain} hide />
               <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(14,165,233,0.08)' }} />
               <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
               <Bar dataKey="value" radius={[10, 10, 10, 10]}>
