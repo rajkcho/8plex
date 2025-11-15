@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
-import mliCalcLogo from '../mlicalclogo.png';
+import headerLogo from '../logo2.png';
 import './App.css';
 import {
   BarChart,
@@ -761,7 +761,7 @@ function App() {
       <header className="app-header">
         <div className="header-top">
           <div className="header-branding">
-            <img src={mliCalcLogo} alt="MLI Calc" className="app-logo" />
+            <img src={headerLogo} alt="MLI Calc" className="app-logo" />
           </div>
           <div className="baseline-chip">
             Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
