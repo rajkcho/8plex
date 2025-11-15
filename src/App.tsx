@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
-import questionIcon from '../question.webp';
 import './App.css';
 import {
   BarChart,
@@ -547,7 +546,7 @@ function App() {
                     aria-label={`What is ${card.tooltip.title}?`}
                     aria-describedby={tooltipId}
                   >
-                    <img src={questionIcon} alt="" aria-hidden="true" />
+                    <span aria-hidden="true">?</span>
                     <div id={tooltipId} className="metric-tooltip" role="tooltip">
                       <p className="metric-tooltip-title">{card.tooltip.title}</p>
                       <p className="metric-tooltip-text">{card.tooltip.description}</p>
