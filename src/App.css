@@ -25,14 +25,6 @@
   font-size: clamp(2rem, 3vw, 2.75rem);
 }
 
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.75rem;
-  color: #3b82f6;
-  margin-bottom: 0.25rem;
-}
-
 .baseline-chip {
   background: #0c4a6e;
   color: #fff;
@@ -358,6 +350,12 @@ input[type='number'] {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
+}
+
+.header-metrics {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+  max-width: 760px;
 }
 
 .charts-grid {

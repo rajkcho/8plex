@@ -322,8 +322,16 @@ function App() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">8-Plex Model</p>
           <h1>CMHC MLI Select Investment Calculator</h1>
+          <div className="metrics-grid header-metrics">
+            {metricCards.map((card) => (
+              <div key={card.label} className="metric-card">
+                <p className="metric-label">{card.label}</p>
+                <p className="metric-value">{card.format(card.value)}</p>
+                {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
+              </div>
+            ))}
+          </div>
         </div>
         <div className="baseline-chip">
           Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
@@ -574,16 +582,6 @@ function App() {
             })}
           </div>
         </div>
-      </section>
-
-      <section className="metrics-grid">
-        {metricCards.map((card) => (
-          <div key={card.label} className="metric-card">
-            <p className="metric-label">{card.label}</p>
-            <p className="metric-value">{card.format(card.value)}</p>
-            {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
-          </div>
-        ))}
       </section>
 
       <section className="charts-grid">
