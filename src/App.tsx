@@ -632,324 +632,328 @@ function App() {
         </div>
       </header>
 
-      <section className="panel-grid">
-        <div className="panel scenario-panel">
-          <div className="panel-header">
-            <h2>Scenario Library</h2>
-            <p>Save and share assumptions so anyone can load them later.</p>
-          </div>
-          <form className="scenario-form" onSubmit={handleScenarioSubmit}>
-            <label htmlFor="scenarioName">Scenario Name</label>
-            <div className="scenario-input-row">
-              <input
-                id="scenarioName"
-                type="text"
-                value={scenarioName}
-                placeholder="e.g. Optimistic Lease-Up"
-                onChange={(event) => {
-                  setScenarioName(event.target.value);
-                  if (scenarioError) {
-                    setScenarioError(null);
-                  }
-                }}
-              />
-              <button
-                type="submit"
-                disabled={isSavingScenario || !scenarioName.trim()}
-                aria-label="Save scenario"
-                title="Save scenario"
-              >
-                {isSavingScenario ? (
-                  'Saving...'
-                ) : (
-                  <img src={diskIcon} alt="" aria-hidden="true" className="scenario-save-icon" />
-                )}
-              </button>
+      <section className="panel-sections">
+        <div className="panel-grid">
+          <div className="panel scenario-panel">
+            <div className="panel-header">
+              <h2>Scenario Library</h2>
+              <p>Save and share assumptions so anyone can load them later.</p>
             </div>
-          </form>
-          {scenarioError && <p className="scenario-error">{scenarioError}</p>}
-          <div className="scenario-list">
-            {isLoadingScenarios ? (
-              <p className="scenario-muted">Loading scenarios...</p>
-            ) : scenarios.length === 0 ? (
-              <p className="scenario-muted">No saved scenarios yet.</p>
-            ) : (
-              scenarios.map((scenario) => (
-                <div
-                  key={scenario.id}
-                  className={`scenario-item${activeScenarioId === scenario.id ? ' active' : ''}`}
+            <form className="scenario-form" onSubmit={handleScenarioSubmit}>
+              <label htmlFor="scenarioName">Scenario Name</label>
+              <div className="scenario-input-row">
+                <input
+                  id="scenarioName"
+                  type="text"
+                  value={scenarioName}
+                  placeholder="e.g. Optimistic Lease-Up"
+                  onChange={(event) => {
+                    setScenarioName(event.target.value);
+                    if (scenarioError) {
+                      setScenarioError(null);
+                    }
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={isSavingScenario || !scenarioName.trim()}
+                  aria-label="Save scenario"
+                  title="Save scenario"
                 >
-                  <button
-                    type="button"
-                    className="scenario-load"
-                    onClick={() => handleApplyScenario(scenario)}
-                  >
-                    <span className="scenario-name">{scenario.name}</span>
-                    <span className="scenario-timestamp">{formatScenarioTimestamp(scenario.createdAt)}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="scenario-delete"
-                    aria-label={`Delete ${scenario.name}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleDeleteScenario(scenario.id);
-                    }}
-                  >
-                    X
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Capital Stack</h2>
-            <p>Purchase price, debt terms, and equity.</p>
-          </div>
-          <div className="input-control">
-            <label htmlFor="purchasePrice">Purchase Price</label>
-            <div className="input-row">
-              <input
-                id="purchasePrice"
-                type="range"
-                min={1_500_000}
-                max={3_500_000}
-                step={10_000}
-                value={assumptions.purchasePrice}
-                onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
-              />
-              <div className="currency-input">
-                <span className="prefix">$</span>
-                <input
-                  type="number"
-                  value={Math.round(assumptions.purchasePrice)}
-                  onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
-                />
+                  {isSavingScenario ? (
+                    'Saving...'
+                  ) : (
+                    <img src={diskIcon} alt="" aria-hidden="true" className="scenario-save-icon" />
+                  )}
+                </button>
               </div>
+            </form>
+            {scenarioError && <p className="scenario-error">{scenarioError}</p>}
+            <div className="scenario-list">
+              {isLoadingScenarios ? (
+                <p className="scenario-muted">Loading scenarios...</p>
+              ) : scenarios.length === 0 ? (
+                <p className="scenario-muted">No saved scenarios yet.</p>
+              ) : (
+                scenarios.map((scenario) => (
+                  <div
+                    key={scenario.id}
+                    className={`scenario-item${activeScenarioId === scenario.id ? ' active' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="scenario-load"
+                      onClick={() => handleApplyScenario(scenario)}
+                    >
+                      <span className="scenario-name">{scenario.name}</span>
+                      <span className="scenario-timestamp">{formatScenarioTimestamp(scenario.createdAt)}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="scenario-delete"
+                      aria-label={`Delete ${scenario.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleDeleteScenario(scenario.id);
+                      }}
+                    >
+                      X
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
-          <div className="input-control">
-            <label htmlFor="loanToValue">Loan to Value</label>
-            <div className="input-row">
-              <input
-                id="loanToValue"
-                type="range"
-                min={50}
-                max={95}
-                step={1}
-                value={Math.round((assumptions.loanToValue ?? 0) * 100)}
-                onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
-              />
-              <div className="percent-input">
-                <input
-                  type="number"
-                  value={Math.round((assumptions.loanToValue ?? 0) * 100)}
-                  onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
-                />
-                <span className="suffix">%</span>
-              </div>
+          <div className="panel">
+            <div className="panel-header">
+              <h2>Capital Stack</h2>
+              <p>Purchase price, debt terms, and equity.</p>
             </div>
-          </div>
-          <div className="input-stack">
             <div className="input-control">
-              <label htmlFor="interestRate">Interest Rate</label>
+              <label htmlFor="purchasePrice">Purchase Price</label>
               <div className="input-row">
                 <input
-                  id="interestRate"
+                  id="purchasePrice"
                   type="range"
-                  min={2}
-                  max={8}
-                  step={0.05}
-                  value={(assumptions.interestRate ?? 0) * 100}
-                  onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+                  min={1_500_000}
+                  max={3_500_000}
+                  step={10_000}
+                  value={assumptions.purchasePrice}
+                  onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
+                />
+                <div className="currency-input">
+                  <span className="prefix">$</span>
+                  <input
+                    type="number"
+                    value={Math.round(assumptions.purchasePrice)}
+                    onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="input-control">
+              <label htmlFor="loanToValue">Loan to Value</label>
+              <div className="input-row">
+                <input
+                  id="loanToValue"
+                  type="range"
+                  min={50}
+                  max={95}
+                  step={1}
+                  value={Math.round((assumptions.loanToValue ?? 0) * 100)}
+                  onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
                 />
                 <div className="percent-input">
                   <input
                     type="number"
-                    value={Number(((assumptions.interestRate ?? 0) * 100).toFixed(2))}
-                    onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+                    value={Math.round((assumptions.loanToValue ?? 0) * 100)}
+                    onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
                   />
                   <span className="suffix">%</span>
                 </div>
               </div>
             </div>
-            <div className="input-control">
-              <label htmlFor="amortYears">Amortization (Years)</label>
-              <div className="input-row">
-                <input
-                  id="amortYears"
-                  type="range"
-                  min={15}
-                  max={50}
-                  step={1}
-                  value={assumptions.amortYears}
-                  onChange={(event) => handleAmortChange(Number(event.target.value))}
-                />
-                <div className="number-input">
+            <div className="input-stack">
+              <div className="input-control">
+                <label htmlFor="interestRate">Interest Rate</label>
+                <div className="input-row">
                   <input
-                    type="number"
+                    id="interestRate"
+                    type="range"
+                    min={2}
+                    max={8}
+                    step={0.05}
+                    value={(assumptions.interestRate ?? 0) * 100}
+                    onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+                  />
+                  <div className="percent-input">
+                    <input
+                      type="number"
+                      value={Number(((assumptions.interestRate ?? 0) * 100).toFixed(2))}
+                      onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+                    />
+                    <span className="suffix">%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="input-control">
+                <label htmlFor="amortYears">Amortization (Years)</label>
+                <div className="input-row">
+                  <input
+                    id="amortYears"
+                    type="range"
+                    min={15}
+                    max={50}
+                    step={1}
                     value={assumptions.amortYears}
                     onChange={(event) => handleAmortChange(Number(event.target.value))}
                   />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="assumption-cards">
-            {assumptionCards.map((card) => (
-              <div key={card.label} className="metric-card subtle">
-                <p className="metric-label">{card.label}</p>
-                <p className="metric-value">{card.format(card.value)}</p>
-                {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Rents & Income</h2>
-            <p>Update the rent roll and other monthly revenue streams.</p>
-          </div>
-          <div className="unit-grid">
-            {assumptions.unitMix.map((unit: UnitAssumption, index: number) => (
-              <div key={`${unit.name}-${index}`} className="unit-card">
-                <div className="unit-card-header">
-                  <label className="unit-label-input">
-                    Unit Label
-                    <input
-                      type="text"
-                      value={unit.name}
-                      onChange={(event) => handleUnitNameChange(index, event.target.value)}
-                      placeholder="e.g. 2 Bed Lower"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="unit-remove-button"
-                    onClick={() => handleRemoveUnitType(index)}
-                    disabled={(assumptions.unitMix?.length ?? 0) <= 1}
-                    aria-label="Remove unit type"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div className="unit-fields">
-                  <label>
-                    # of Units
+                  <div className="number-input">
                     <input
                       type="number"
-                      min={0}
-                      step={1}
-                      value={unit.units}
-                      onChange={(event) => handleUnitCountChange(index, Number(event.target.value))}
-                    />
-                  </label>
-                  <label>
-                    # of Bedrooms
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={unit.bedrooms ?? 0}
-                      onChange={(event) => handleUnitBedroomChange(index, Number(event.target.value))}
-                    />
-                  </label>
-                  <label className="unit-rent-field">
-                    Monthly Rent
-                    <div className="currency-input">
-                      <span className="prefix">$</span>
-                      <input
-                        type="number"
-                        value={unit.rent}
-                        onChange={(event) => handleUnitRentChange(index, Number(event.target.value))}
-                      />
-                    </div>
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button type="button" className="add-unit-button" onClick={handleAddUnitType}>
-            + Add unit type
-          </button>
-          <div className="other-income">
-            {assumptions.otherIncomeItems.map((item, index) => (
-              <div key={item.name} className="unit-card">
-                <p className="unit-label">{item.name}</p>
-                <label>
-                  Monthly Amount
-                  <div className="currency-input">
-                    <span className="prefix">$</span>
-                    <input
-                      type="number"
-                      value={item.monthlyAmount}
-                      onChange={(event) => {
-                        const value = Number(event.target.value);
-                        setAssumptions((prev) => {
-                          const updated = prev.otherIncomeItems.map((income, idx) =>
-                            idx === index ? { ...income, monthlyAmount: value } : income,
-                          );
-                          return { ...prev, otherIncomeItems: updated };
-                        });
-                      }}
+                      value={assumptions.amortYears}
+                      onChange={(event) => handleAmortChange(Number(event.target.value))}
                     />
                   </div>
-                </label>
+                </div>
               </div>
-            ))}
+            </div>
+            <div className="assumption-cards">
+              {assumptionCards.map((card) => (
+                <div key={card.label} className="metric-card subtle">
+                  <p className="metric-label">{card.label}</p>
+                  <p className="metric-value">{card.format(card.value)}</p>
+                  {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Operating Expenses</h2>
-            <p>Control total opex or fine-tune individual categories.</p>
-          </div>
-          <div className="expense-row total">
-            <div>
-              <p>Total Opex</p>
-              <h3>{currencyFormatter.format(totalOperatingExpenses)}</h3>
+        <div className="panel-grid">
+          <div className="panel">
+            <div className="panel-header">
+              <h2>Rents & Income</h2>
+              <p>Update the rent roll and other monthly revenue streams.</p>
             </div>
-            <p className="muted">Per year</p>
-          </div>
-          <div className="expense-list">
-            {Object.entries(assumptions.operatingExpenses ?? {}).map(([label, value]) => {
-              const displayLabel = sanitizeExpenseLabel(label);
-              const normalizedLabel = normalizeExpenseLabel(label);
-              const isPercentExpense = percentageExpenseLabels.has(normalizedLabel);
-              return (
-                <div key={label} className="expense-item">
-                  <label>
-                    {displayLabel}
-                    {isPercentExpense ? (
-                      <div className="percent-input">
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={0.1}
-                          value={percentExpenseValues[normalizedLabel] ?? 0}
-                          onChange={(event) => handlePercentExpenseChange(normalizedLabel, Number(event.target.value))}
-                        />
-                        <span className="suffix">%</span>
-                      </div>
-                    ) : (
+            <div className="unit-grid">
+              {assumptions.unitMix.map((unit: UnitAssumption, index: number) => (
+                <div key={`${unit.name}-${index}`} className="unit-card">
+                  <div className="unit-card-header">
+                    <label className="unit-label-input">
+                      Unit Label
+                      <input
+                        type="text"
+                        value={unit.name}
+                        onChange={(event) => handleUnitNameChange(index, event.target.value)}
+                        placeholder="e.g. 2 Bed Lower"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="unit-remove-button"
+                      onClick={() => handleRemoveUnitType(index)}
+                      disabled={(assumptions.unitMix?.length ?? 0) <= 1}
+                      aria-label="Remove unit type"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="unit-fields">
+                    <label>
+                      # of Units
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={unit.units}
+                        onChange={(event) => handleUnitCountChange(index, Number(event.target.value))}
+                      />
+                    </label>
+                    <label>
+                      # of Bedrooms
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={unit.bedrooms ?? 0}
+                        onChange={(event) => handleUnitBedroomChange(index, Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="unit-rent-field">
+                      Monthly Rent
                       <div className="currency-input">
                         <span className="prefix">$</span>
                         <input
                           type="number"
-                          value={Math.round(value)}
-                          onChange={(event) => handleOperatingExpenseChange(label, Number(event.target.value))}
+                          value={unit.rent}
+                          onChange={(event) => handleUnitRentChange(index, Number(event.target.value))}
                         />
                       </div>
-                    )}
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="add-unit-button" onClick={handleAddUnitType}>
+              + Add unit type
+            </button>
+            <div className="other-income">
+              {assumptions.otherIncomeItems.map((item, index) => (
+                <div key={item.name} className="unit-card">
+                  <p className="unit-label">{item.name}</p>
+                  <label>
+                    Monthly Amount
+                    <div className="currency-input">
+                      <span className="prefix">$</span>
+                      <input
+                        type="number"
+                        value={item.monthlyAmount}
+                        onChange={(event) => {
+                          const value = Number(event.target.value);
+                          setAssumptions((prev) => {
+                            const updated = prev.otherIncomeItems.map((income, idx) =>
+                              idx === index ? { ...income, monthlyAmount: value } : income,
+                            );
+                            return { ...prev, otherIncomeItems: updated };
+                          });
+                        }}
+                      />
+                    </div>
                   </label>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-header">
+              <h2>Operating Expenses</h2>
+              <p>Control total opex or fine-tune individual categories.</p>
+            </div>
+            <div className="expense-row total">
+              <div>
+                <p>Total Opex</p>
+                <h3>{currencyFormatter.format(totalOperatingExpenses)}</h3>
+              </div>
+              <p className="muted">Per year</p>
+            </div>
+            <div className="expense-list">
+              {Object.entries(assumptions.operatingExpenses ?? {}).map(([label, value]) => {
+                const displayLabel = sanitizeExpenseLabel(label);
+                const normalizedLabel = normalizeExpenseLabel(label);
+                const isPercentExpense = percentageExpenseLabels.has(normalizedLabel);
+                return (
+                  <div key={label} className="expense-item">
+                    <label>
+                      {displayLabel}
+                      {isPercentExpense ? (
+                        <div className="percent-input">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            value={percentExpenseValues[normalizedLabel] ?? 0}
+                            onChange={(event) => handlePercentExpenseChange(normalizedLabel, Number(event.target.value))}
+                          />
+                          <span className="suffix">%</span>
+                        </div>
+                      ) : (
+                        <div className="currency-input">
+                          <span className="prefix">$</span>
+                          <input
+                            type="number"
+                            value={Math.round(value)}
+                            onChange={(event) => handleOperatingExpenseChange(label, Number(event.target.value))}
+                          />
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
