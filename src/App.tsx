@@ -323,7 +323,7 @@ function App() {
       <header className="app-header">
         <div>
           <h1>CMHC MLI Select Investment Calculator</h1>
-          <div className="metrics-grid header-metrics">
+          <div className="header-metrics">
             {metricCards.map((card) => (
               <div key={card.label} className="metric-card">
                 <p className="metric-label">{card.label}</p>
