@@ -520,10 +520,10 @@ function App() {
     },
   ];
 
-const metricCards: MetricCard[] = [
-  {
-    label: 'NOI',
-    value: metrics.noi,
+  const metricCards: MetricCard[] = [
+    {
+      label: 'NOI',
+      value: metrics.noi,
       format: currencyFormatter.format,
       tooltip: {
         title: 'NOI',
@@ -567,10 +567,10 @@ const metricCards: MetricCard[] = [
         description:
           'Capitalization Rate. NOI divided by the purchase price or property value, expressed as a percentage.',
       },
-  },
-];
+    },
+  ];
 
-return (
+  return (
     <div className="app-shell">
       <header className="app-header">
         <div className="header-top">
