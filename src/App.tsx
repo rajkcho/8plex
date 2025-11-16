@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitAssumption } from './model/financeModel';
+import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type FinanceMetrics, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
 import headerLogo from '../logo2.png';
 import './App.css';
@@ -505,6 +505,8 @@ function App() {
   const [newExpenseLabel, setNewExpenseLabel] = useState('');
   const [newExpenseValue, setNewExpenseValue] = useState('');
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
+  const [rentStepPercent, setRentStepPercent] = useState(5);
+  const [interestStepBps, setInterestStepBps] = useState(5);
 
   const brokerFeeSliderMax = Math.max(assumptions.brokerFee || 0, 250_000);
   const contingencySliderMax = Math.max((assumptions.contingencyPct ?? 0) * 100, 20);
@@ -574,15 +576,15 @@ function App() {
     const filtered = normalized.filter(({ timestamp }) => timestamp >= cutoffTimestamp);
     const target = filtered.length ? filtered : normalized.slice(-20);
 
-    return target.map(({ point }) => ({
-      isoDate: point.date,
-      displayLabel: `${point.year} Q${point.quarter}`,
-      label: point.label,
-      vacancyRate: point.rate,
-      season: point.season,
-      quality: point.quality ?? null,
-    }));
-  }, [selectedVacancyMetro, vacancySeriesByMetro]);
+      return target.map(({ point }) => ({
+        isoDate: point.date,
+        displayLabel: `${point.year} Q${point.quarter}`,
+        label: point.label,
+        vacancyRate: point.rate,
+        season: point.season,
+        quality: point.quality ?? null,
+      }));
+    }, [selectedVacancyMetro, vacancySeriesByMetro]);
   const latestVacancyPoint = vacancyChartData[vacancyChartData.length - 1] ?? null;
   const maggiMetadata = useMemo(() => {
     const resolvedLocation = selectedVacancyCity?.name ?? currentMarketRentCity ?? null;
@@ -593,6 +595,72 @@ function App() {
       postalCode: null as string | null,
     };
   }, [selectedVacancyCity, currentMarketRentCity]);
+  const sensitivityAxisCount = 5;
+  const rentShifts = useMemo(() => {
+    const half = Math.floor(sensitivityAxisCount / 2);
+    return Array.from({ length: sensitivityAxisCount }, (_, index) => (index - half) * (rentStepPercent / 100));
+  }, [rentStepPercent]);
+  const interestShifts = useMemo(() => {
+    const half = Math.floor(sensitivityAxisCount / 2);
+    return Array.from({ length: sensitivityAxisCount }, (_, index) => (index - half) * (interestStepBps / 10000));
+  }, [interestStepBps]);
+
+  const buildSensitivityMatrix = useCallback(
+    (valueSelector: (metrics: FinanceMetrics) => number) =>
+      interestShifts.map((interestDelta) =>
+        rentShifts.map((rentDelta) => {
+          const scaledUnitMix = assumptions.unitMix.map((unit) => ({
+            ...unit,
+            rent: unit.rent * (1 + rentDelta),
+          }));
+          const scenarioAssumptions = {
+            ...assumptions,
+            interestRate: (assumptions.interestRate ?? 0) + interestDelta,
+            unitMix: scaledUnitMix,
+          };
+          const metrics = calculateMetrics(scenarioAssumptions);
+          return valueSelector(metrics);
+        }),
+      ),
+    [assumptions, interestShifts, rentShifts],
+  );
+  const cashFlowMatrix = useMemo(() => buildSensitivityMatrix((metrics) => metrics.cashFlow), [buildSensitivityMatrix]);
+  const cashOnCashMatrix = useMemo(() => buildSensitivityMatrix((metrics) => metrics.cashOnCash), [buildSensitivityMatrix]);
+  const formatRentLabel = (delta: number): string => {
+    const value = delta * 100;
+    const prefix = value > 0 ? '+' : '';
+    return `${prefix}${value.toFixed(1)}%`;
+  };
+  const formatInterestLabel = (delta: number): string => {
+    const bps = Math.round(delta * 10000);
+    const prefix = bps > 0 ? '+' : '';
+    return `${prefix}${bps} bps`;
+  };
+
+  const renderSensitivityTable = (matrix: number[][], valueFormatter: (value: number) => string) => (
+    <div className="sensitivity-table-wrapper">
+      <table className="sensitivity-table">
+        <thead>
+          <tr>
+            <th scope="col">Interest ↓ / Rent →</th>
+            {rentShifts.map((delta) => (
+              <th key={`rent-${delta}`}>{formatRentLabel(delta)}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {interestShifts.map((interestDelta, rowIndex) => (
+            <tr key={`interest-${interestDelta}`}>
+              <th scope="row">{formatInterestLabel(interestDelta)}</th>
+              {matrix[rowIndex].map((value, colIndex) => (
+                <td key={`cell-${rowIndex}-${colIndex}`}>{valueFormatter(value)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -1563,6 +1631,58 @@ function App() {
               </BarChart>
             </ResponsiveContainer>
           )}
+        </div>
+      </section>
+      <section className="panel sensitivity-panel full-width-panel">
+        <div className="panel-header sensitivity-header">
+          <div>
+            <h2>Sensitivity Analysis</h2>
+            <p>Compare how rent and interest quote changes move Annual CF and Cash-On-Cash.</p>
+          </div>
+          <div className="sensitivity-controls">
+            <label htmlFor="rentStepInput">
+              Rent step
+              <input
+                id="rentStepInput"
+                type="number"
+                min={1}
+                max={10}
+                step={0.5}
+                value={rentStepPercent}
+                onChange={(event) => {
+                  const parsed = Number(event.target.value);
+                  setRentStepPercent(parsed > 0 ? parsed : 0.5);
+                }}
+              />
+              <span className="suffix">%</span>
+            </label>
+            <label htmlFor="interestStepInput">
+              Interest step
+              <input
+                id="interestStepInput"
+                type="number"
+                min={1}
+                max={20}
+                step={0.5}
+                value={interestStepBps}
+                onChange={(event) => {
+                  const parsed = Number(event.target.value);
+                  setInterestStepBps(parsed > 0 ? parsed : 0.5);
+                }}
+              />
+              <span className="suffix">bps</span>
+            </label>
+          </div>
+        </div>
+        <div className="sensitivity-grid">
+          <div className="sensitivity-card">
+            <h3>Annual CF</h3>
+            {renderSensitivityTable(cashFlowMatrix, (value) => currencyFormatter.format(value))}
+          </div>
+          <div className="sensitivity-card">
+            <h3>Cash-on-Cash</h3>
+            {renderSensitivityTable(cashOnCashMatrix, (value) => percentFormatter.format(value))}
+          </div>
         </div>
       </section>
       <section className="panel market-data-panel full-width-panel">
