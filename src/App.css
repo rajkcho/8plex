@@ -729,6 +729,51 @@ input[type='number'] {
   gap: 0.9rem;
 }
 
+.capital-stack-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: flex-start;
+  margin-top: 1rem;
+}
+
+.capital-stack-input-column {
+  flex: 1 1 420px;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.capital-stack-metrics-column {
+  flex: 0 0 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.capital-stack-panel .input-row {
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.capital-stack-panel .input-row input[type='range'] {
+  flex: 1;
+  min-width: 220px;
+}
+
+.capital-stack-panel .currency-input,
+.capital-stack-panel .percent-input,
+.capital-stack-panel .number-input {
+  max-width: 130px;
+}
+
+.assumption-cards.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .assumption-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

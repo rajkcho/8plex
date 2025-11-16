@@ -1370,152 +1370,160 @@ function App() {
             <h2>Capital Stack</h2>
             <p>Purchase price, debt terms, and equity.</p>
           </div>
-          <div className="input-control">
-            <label htmlFor="purchasePrice">Purchase Price</label>
-            <div className="input-row">
-              <input
-                id="purchasePrice"
-                type="range"
-                min={1_500_000}
-                max={3_500_000}
-                step={10_000}
-                value={assumptions.purchasePrice}
-                onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
-              />
-              <div className="currency-input">
-                <span className="prefix">$</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatCurrencyInputValue(assumptions.purchasePrice)}
-                  onChange={(event) => handlePurchasePriceChange(parseCurrencyInputValue(event.target.value))}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="input-control">
-            <label htmlFor="brokerFee">Broker Fee</label>
-            <div className="input-row">
-              <input
-                id="brokerFee"
-                type="range"
-                min={0}
-                max={brokerFeeSliderMax}
-                step={500}
-                value={assumptions.brokerFee}
-                onChange={(event) => handleBrokerFeeChange(Number(event.target.value))}
-              />
-              <div className="currency-input">
-                <span className="prefix">$</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={formatCurrencyInputValue(assumptions.brokerFee)}
-                  onChange={(event) => handleBrokerFeeChange(parseCurrencyInputValue(event.target.value))}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="input-control">
-            <label htmlFor="loanToValue">Loan to Value</label>
-            <div className="input-row">
-              <input
-                id="loanToValue"
-                type="range"
-                min={50}
-                max={95}
-                step={1}
-                value={Math.round((assumptions.loanToValue ?? 0) * 100)}
-                onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
-              />
-              <div className="percent-input">
-                <input
-                  type="number"
-                  value={Math.round((assumptions.loanToValue ?? 0) * 100)}
-                  onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
-                />
-                <span className="suffix">%</span>
-              </div>
-            </div>
-          </div>
-          <div className="input-control">
-            <label htmlFor="contingencyPct">Contingency</label>
-            <div className="input-row">
-              <input
-                id="contingencyPct"
-                type="range"
-                min={0}
-                max={contingencySliderMax}
-                step={0.25}
-                value={(assumptions.contingencyPct ?? 0) * 100}
-                onChange={(event) => handleContingencyChange(Number(event.target.value))}
-              />
-              <div className="percent-input">
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={(assumptions.contingencyPct ?? 0) * 100}
-                  onChange={(event) => handleContingencyChange(Number(event.target.value))}
-                />
-                <span className="suffix">%</span>
-              </div>
-            </div>
-          </div>
-          <div className="input-stack">
-            <div className="input-control">
-              <label htmlFor="interestRate">Interest Rate</label>
-              <div className="input-row">
-                <input
-                  id="interestRate"
-                  type="range"
-                  min={2}
-                  max={8}
-                  step={0.05}
-                  value={(assumptions.interestRate ?? 0) * 100}
-                  onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
-                />
-                <div className="percent-input">
+          <div className="capital-stack-grid">
+            <div className="capital-stack-input-column">
+              <div className="input-control">
+                <label htmlFor="purchasePrice">Purchase Price</label>
+                <div className="input-row">
                   <input
-                    type="number"
-                    value={Number(((assumptions.interestRate ?? 0) * 100).toFixed(2))}
-                    onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+                    id="purchasePrice"
+                    type="range"
+                    min={1_500_000}
+                    max={3_500_000}
+                    step={10_000}
+                    value={assumptions.purchasePrice}
+                    onChange={(event) => handlePurchasePriceChange(Number(event.target.value))}
                   />
-                  <span className="suffix">%</span>
+                  <div className="currency-input">
+                    <span className="prefix">$</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={formatCurrencyInputValue(assumptions.purchasePrice)}
+                      onChange={(event) =>
+                        handlePurchasePriceChange(parseCurrencyInputValue(event.target.value))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="input-control">
+                <label htmlFor="brokerFee">Broker Fee</label>
+                <div className="input-row">
+                  <input
+                    id="brokerFee"
+                    type="range"
+                    min={0}
+                    max={brokerFeeSliderMax}
+                    step={500}
+                    value={assumptions.brokerFee}
+                    onChange={(event) => handleBrokerFeeChange(Number(event.target.value))}
+                  />
+                  <div className="currency-input">
+                    <span className="prefix">$</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={formatCurrencyInputValue(assumptions.brokerFee)}
+                      onChange={(event) => handleBrokerFeeChange(parseCurrencyInputValue(event.target.value))}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="input-control">
+                <label htmlFor="loanToValue">Loan to Value</label>
+                <div className="input-row">
+                  <input
+                    id="loanToValue"
+                    type="range"
+                    min={50}
+                    max={95}
+                    step={1}
+                    value={Math.round((assumptions.loanToValue ?? 0) * 100)}
+                    onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
+                  />
+                  <div className="percent-input">
+                    <input
+                      type="number"
+                      value={Math.round((assumptions.loanToValue ?? 0) * 100)}
+                      onChange={(event) => handleLoanToValueChange(Number(event.target.value))}
+                    />
+                    <span className="suffix">%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="input-control">
+                <label htmlFor="contingencyPct">Contingency</label>
+                <div className="input-row">
+                  <input
+                    id="contingencyPct"
+                    type="range"
+                    min={0}
+                    max={contingencySliderMax}
+                    step={0.25}
+                    value={(assumptions.contingencyPct ?? 0) * 100}
+                    onChange={(event) => handleContingencyChange(Number(event.target.value))}
+                  />
+                  <div className="percent-input">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={(assumptions.contingencyPct ?? 0) * 100}
+                      onChange={(event) => handleContingencyChange(Number(event.target.value))}
+                    />
+                    <span className="suffix">%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="input-stack">
+                <div className="input-control">
+                  <label htmlFor="interestRate">Interest Rate</label>
+                  <div className="input-row">
+                    <input
+                      id="interestRate"
+                      type="range"
+                      min={2}
+                      max={8}
+                      step={0.05}
+                      value={(assumptions.interestRate ?? 0) * 100}
+                      onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+                    />
+                    <div className="percent-input">
+                      <input
+                        type="number"
+                        value={Number(((assumptions.interestRate ?? 0) * 100).toFixed(2))}
+                        onChange={(event) => handleInterestChange(Number(event.target.value) / 100)}
+                      />
+                      <span className="suffix">%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="input-control">
+                  <label htmlFor="amortYears">Amortization (Years)</label>
+                  <div className="input-row">
+                    <input
+                      id="amortYears"
+                      type="range"
+                      min={15}
+                      max={50}
+                      step={1}
+                      value={assumptions.amortYears}
+                      onChange={(event) => handleAmortChange(Number(event.target.value))}
+                    />
+                    <div className="number-input">
+                      <input
+                        type="number"
+                        value={assumptions.amortYears}
+                        onChange={(event) => handleAmortChange(Number(event.target.value))}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="input-control">
-              <label htmlFor="amortYears">Amortization (Years)</label>
-              <div className="input-row">
-                <input
-                  id="amortYears"
-                  type="range"
-                  min={15}
-                  max={50}
-                  step={1}
-                  value={assumptions.amortYears}
-                  onChange={(event) => handleAmortChange(Number(event.target.value))}
-                />
-                <div className="number-input">
-                  <input
-                    type="number"
-                    value={assumptions.amortYears}
-                    onChange={(event) => handleAmortChange(Number(event.target.value))}
-                  />
-                </div>
+            <div className="capital-stack-metrics-column">
+              <div className="assumption-cards vertical">
+                {assumptionCards.map((card) => (
+                  <div key={card.label} className="metric-card subtle">
+                    <p className="metric-label">{card.label}</p>
+                    <p className="metric-value">{card.format(card.value)}</p>
+                    {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-          <div className="assumption-cards">
-            {assumptionCards.map((card) => (
-              <div key={card.label} className="metric-card subtle">
-                <p className="metric-label">{card.label}</p>
-                <p className="metric-value">{card.format(card.value)}</p>
-                {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
-              </div>
-            ))}
           </div>
         </div>
 
