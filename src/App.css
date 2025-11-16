@@ -325,6 +325,12 @@
   border-radius: 1rem;
   padding: 0.85rem 1rem;
   background: #f8fafc;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .vacancy-summary-label {
@@ -352,6 +358,40 @@
   margin: 0;
   font-weight: 600;
   color: #312e81;
+}
+
+.vacancy-summary.has-photo {
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.35);
+  background-color: #0f172a;
+  padding-bottom: 2.2rem;
+}
+
+.vacancy-summary.has-photo .vacancy-summary-label,
+.vacancy-summary.has-photo .vacancy-summary-value span {
+  color: rgba(241, 245, 249, 0.92);
+}
+
+.vacancy-summary.has-photo .vacancy-summary-value,
+.vacancy-summary.has-photo .vacancy-summary-city {
+  color: #f8fafc;
+}
+
+.vacancy-photo-credit {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.5rem;
+  margin: 0;
+  font-size: 0.7rem;
+  color: rgba(241, 245, 249, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  z-index: 1;
+}
+
+.vacancy-photo-credit a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 .vacancy-chart-wrapper {

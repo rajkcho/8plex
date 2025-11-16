@@ -28,6 +28,7 @@ Open `http://localhost:5173` to explore the dashboard. The SPA lets you adjust p
   ```
   Required env vars: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service role key lives under Project Settings → API in Supabase and allows the server to read/write the table.
 - Point the SPA at the hosted API by setting `VITE_SCENARIO_API_URL` (e.g., `https://your-api.onrender.com`). When it’s omitted, the app continues to call the relative `/api` path so the Vite proxy handles local dev.
+- Add `VITE_PEXELS_API_KEY` to `.env` (or your hosting provider’s environment variables) so the vacancy-rate panel can request skyline overlays from the Pexels API without hardcoding the credential.
 - Use the Scenario Library panel to name the current assumptions, save with the automatic `MM-DD-YY 1:23PM` timestamp, load any shared scenario, or delete one with the `X` action.
 
 ### Market Data Panel

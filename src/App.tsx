@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import type { ChangeEvent, CSSProperties, FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type FinanceMetrics, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
 import headerLogo from '../logo2.png';
@@ -26,6 +26,7 @@ import cmhcCmaList from './assets/cmhc-cmas.json';
 const baselineAssumptions = loadBaselineAssumptions();
 const baselineMetrics = calculateMetrics(baselineAssumptions);
 const scenarioApiBaseUrl = import.meta.env.VITE_SCENARIO_API_URL ?? '';
+const pexelsApiKey = import.meta.env.VITE_PEXELS_API_KEY ?? '';
 
 const buildScenarioUrl = (path: string): string => (scenarioApiBaseUrl ? `${scenarioApiBaseUrl}${path}` : path);
 
@@ -117,6 +118,35 @@ type VacancyChartDatum = {
   vacancyRate: number;
   season: string;
   quality: string | null;
+};
+
+type VacancyCityPhoto = {
+  imageUrl: string;
+  photographer: string;
+  photographerUrl?: string;
+  sourceUrl?: string;
+  altText?: string;
+};
+
+type PexelsPhotoSrc = {
+  original?: string;
+  large?: string;
+  large2x?: string;
+  landscape?: string;
+  medium?: string;
+};
+
+type PexelsPhoto = {
+  id?: number;
+  src?: PexelsPhotoSrc;
+  alt?: string;
+  photographer?: string;
+  photographer_url?: string;
+  url?: string;
+};
+
+type PexelsSearchResponse = {
+  photos?: PexelsPhoto[];
 };
 
 const parseCsvLine = (line: string): string[] => {
@@ -502,6 +532,7 @@ function App() {
   const [vacancySeriesByMetro, setVacancySeriesByMetro] = useState<Record<string, VacancyApiPoint[]>>({});
   const [vacancyLoading, setVacancyLoading] = useState(false);
   const [vacancyError, setVacancyError] = useState<string | null>(null);
+  const [vacancyCityPhotos, setVacancyCityPhotos] = useState<Record<string, VacancyCityPhoto | null>>({});
   const [newExpenseLabel, setNewExpenseLabel] = useState('');
   const [newExpenseValue, setNewExpenseValue] = useState('');
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
@@ -553,6 +584,10 @@ function App() {
   const currentMarketRentCity = selectedMarketCity || marketRentData[0]?.city || '';
   const selectedMarketRentRow = marketRentData.find((row) => row.city === currentMarketRentCity);
   const selectedVacancyCity = cmhcCities.find((city) => city.geographyId === selectedVacancyMetro);
+  const hasVacancyPhotoEntry =
+    Boolean(selectedVacancyMetro) && Object.prototype.hasOwnProperty.call(vacancyCityPhotos, selectedVacancyMetro);
+  const vacancyPhoto =
+    hasVacancyPhotoEntry && selectedVacancyMetro ? vacancyCityPhotos[selectedVacancyMetro] ?? null : null;
   const vacancyChartData = useMemo(() => {
     const activeSeries = vacancySeriesByMetro[selectedVacancyMetro] ?? [];
     if (!activeSeries.length) {
@@ -576,16 +611,28 @@ function App() {
     const filtered = normalized.filter(({ timestamp }) => timestamp >= cutoffTimestamp);
     const target = filtered.length ? filtered : normalized.slice(-20);
 
-      return target.map(({ point }) => ({
-        isoDate: point.date,
-        displayLabel: `${point.year} Q${point.quarter}`,
-        label: point.label,
-        vacancyRate: point.rate,
-        season: point.season,
-        quality: point.quality ?? null,
-      }));
-    }, [selectedVacancyMetro, vacancySeriesByMetro]);
+    return target.map(({ point }) => ({
+      isoDate: point.date,
+      displayLabel: `${point.year} Q${point.quarter}`,
+      label: point.label,
+      vacancyRate: point.rate,
+      season: point.season,
+      quality: point.quality ?? null,
+    }));
+  }, [selectedVacancyMetro, vacancySeriesByMetro]);
   const latestVacancyPoint = vacancyChartData[vacancyChartData.length - 1] ?? null;
+  const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
+    if (!vacancyPhoto) {
+      return undefined;
+    }
+    return {
+      backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 64, 175, 0.4)), url(${vacancyPhoto.imageUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    };
+  }, [vacancyPhoto]);
+  const vacancySummaryClassName = vacancyPhoto ? 'vacancy-summary has-photo' : 'vacancy-summary';
   const maggiMetadata = useMemo(() => {
     const resolvedLocation = selectedVacancyCity?.name ?? currentMarketRentCity ?? null;
     return {
@@ -749,6 +796,88 @@ function App() {
       controller.abort();
     };
   }, [selectedVacancyMetro, vacancySeriesByMetro]);
+
+  useEffect(() => {
+    if (!pexelsApiKey || !selectedVacancyCity || !selectedVacancyMetro || hasVacancyPhotoEntry) {
+      return;
+    }
+
+    const controller = new AbortController();
+    let isActive = true;
+
+    const fetchCityPhoto = async () => {
+      try {
+        const searchQueries = [
+          `${selectedVacancyCity.name} skyline`,
+          `${selectedVacancyCity.name} city skyline`,
+          `${selectedVacancyCity.name} landscape`,
+        ];
+        let resolvedPhoto: VacancyCityPhoto | null = null;
+
+        for (const query of searchQueries) {
+          const url = new URL('https://api.pexels.com/v1/search');
+          url.searchParams.set('query', query);
+          url.searchParams.set('orientation', 'landscape');
+          url.searchParams.set('per_page', '1');
+          url.searchParams.set('size', 'large');
+
+          const response = await fetch(url.toString(), {
+            headers: {
+              Authorization: pexelsApiKey,
+            },
+            signal: controller.signal,
+          });
+          const payload = (await response.json().catch(() => ({}))) as PexelsSearchResponse & { error?: string };
+          if (!response.ok) {
+            throw new Error(payload?.error ?? 'Unable to load skyline photo');
+          }
+
+          const [photo] = Array.isArray(payload.photos) ? payload.photos : [];
+          const src = photo?.src;
+          if (!src) {
+            continue;
+          }
+          const imageUrl = src.landscape ?? src.large2x ?? src.large ?? src.original ?? src.medium ?? null;
+          if (!imageUrl) {
+            continue;
+          }
+          resolvedPhoto = {
+            imageUrl,
+            photographer: photo?.photographer || 'Pexels contributor',
+            photographerUrl: photo?.photographer_url || photo?.url || undefined,
+            sourceUrl: photo?.url ?? undefined,
+            altText: photo?.alt ?? `${selectedVacancyCity.name} skyline`,
+          };
+          break;
+        }
+
+        if (!isActive) {
+          return;
+        }
+
+        setVacancyCityPhotos((prev) => ({
+          ...prev,
+          [selectedVacancyMetro]: resolvedPhoto,
+        }));
+      } catch (error) {
+        if (!isActive || (error instanceof DOMException && error.name === 'AbortError')) {
+          return;
+        }
+        setVacancyCityPhotos((prev) => ({
+          ...prev,
+          [selectedVacancyMetro]: null,
+        }));
+        console.error('Unable to load skyline image from Pexels', error);
+      }
+    };
+
+    fetchCityPhoto();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [hasVacancyPhotoEntry, pexelsApiKey, selectedVacancyCity, selectedVacancyMetro]);
 
   useEffect(() => {
     if (!Object.keys(percentExpenseValues).length || metrics.grossRentAnnual <= 0) {
@@ -1777,7 +1906,7 @@ function App() {
               </label>
             </div>
             {latestVacancyPoint && selectedVacancyCity ? (
-              <div className="vacancy-summary">
+              <div className={vacancySummaryClassName} style={vacancySummaryStyle}>
                 <div>
                   <p className="vacancy-summary-label">Latest reading</p>
                   <p className="vacancy-summary-value">
@@ -1786,6 +1915,18 @@ function App() {
                   </p>
                 </div>
                 <p className="vacancy-summary-city">{selectedVacancyCity.name}</p>
+                {vacancyPhoto?.photographer ? (
+                  <p className="vacancy-photo-credit">
+                    Photo: {vacancyPhoto.photographer} /{' '}
+                    {vacancyPhoto.photographerUrl ? (
+                      <a href={vacancyPhoto.photographerUrl} target="_blank" rel="noreferrer">
+                        Pexels
+                      </a>
+                    ) : (
+                      'Pexels'
+                    )}
+                  </p>
+                ) : null}
               </div>
             ) : null}
             <div className="vacancy-chart-wrapper">
