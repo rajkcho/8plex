@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "functions": {
-    "api/[[...path]].ts": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 30
+  "builds": [
+    {
+      "src": "api/[[...path]].ts",
+      "use": "@vercel/node"
     }
-  }
+  ]
 }
