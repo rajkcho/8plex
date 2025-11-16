@@ -7,11 +7,13 @@ import zlib from 'node:zlib';
 import unzipper from 'unzipper';
 import type { File as ZipFileEntry } from 'unzipper';
 import { createScenarioStore } from './scenarioStore.ts';
+import { chatCompletion, type ChatMessage } from './llmClient.ts';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const store = createScenarioStore();
 const CMHC_ENDPOINT = 'https://www03.cmhc-schl.gc.ca/hmip-pimh/en/TableMapChart/ExportTable';
 const VACANCY_CACHE_MS = 1000 * 60 * 60; // 1 hour
+const MAX_MARVIN_HISTORY = 30;
 
 try {
   dns.setDefaultResultOrder?.('ipv4first');
@@ -77,6 +79,84 @@ type DemographicSummary = {
     code: string | null;
   } | null;
   sources: { census: string; crime: string };
+};
+
+type MarvinChatRequestBody = {
+  message?: unknown;
+  conversation_id?: unknown;
+  metadata?: {
+    location?: unknown;
+  } | null;
+};
+
+type PlaceholderRentVacancy = {
+  location: string;
+  averageRents: Record<string, number>;
+  vacancyRatePercent: number;
+  note: string;
+  source: string;
+};
+
+type PlaceholderDemographics = {
+  location: string;
+  population: number;
+  medianAge: number;
+  householdIncome: number;
+  englishOrFrenchPercent: number;
+  note: string;
+  source: string;
+};
+
+type PlaceholderMliSummary = {
+  tiers: Array<{ leverage: string; requirement: string }>;
+  insurancePremiumRangePercent: string;
+  sustainabilityNotes: string;
+  source: string;
+};
+
+const MARVIN_SYSTEM_PROMPT =
+  'You are Marvin, an AI assistant embedded in a Canadian real estate investment website. You specialize in CMHC data, Statistics Canada demographic data, and the CMHC MLI Select program. You help users reason about rents, vacancy, demographics, affordability, and MLI Select assumptions. If you do not know something or there is no data, say so clearly. Do not invent specific CMHC or StatsCan numbers. For legal, tax, or lending decisions, give only general educational information and advise users to confirm with a professional.';
+
+const marvinConversations = new Map<string, ChatMessage[]>();
+
+const get_cmhc_rent_and_vacancy = (location: string): PlaceholderRentVacancy => ({
+  location,
+  averageRents: {
+    oneBedroom: 1850,
+    twoBedroom: 2350,
+  },
+  vacancyRatePercent: 2.6,
+  note: 'Example values only. Replace with live CMHC rent and vacancy data.',
+  source: 'Placeholder dataset',
+});
+
+const get_statscan_demographics = (location: string): PlaceholderDemographics => ({
+  location,
+  population: 120000,
+  medianAge: 39,
+  householdIncome: 92000,
+  englishOrFrenchPercent: 94,
+  note: 'Example values only. Replace with live Statistics Canada demographics.',
+  source: 'Placeholder dataset',
+});
+
+const get_mli_select_summary = (): PlaceholderMliSummary => ({
+  tiers: [
+    { leverage: '85% LTC', requirement: 'Baseline energy and affordability measures' },
+    { leverage: '90% LTC', requirement: 'Enhanced affordability or deep retrofit plan' },
+  ],
+  insurancePremiumRangePercent: '1.0-4.5%',
+  sustainabilityNotes: 'Placeholder for MLI Select emissions and energy targets.',
+  source: 'Placeholder program summary',
+});
+
+const trimMarvinHistory = (messages: ChatMessage[]): ChatMessage[] => {
+  if (messages.length <= MAX_MARVIN_HISTORY) {
+    return messages;
+  }
+  const [systemMessage, ...rest] = messages;
+  const trimmed = rest.slice(-MAX_MARVIN_HISTORY);
+  return [systemMessage, ...trimmed];
 };
 
 class RequestError extends Error {
@@ -799,6 +879,105 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
           detail: formatUnknownError(error),
         });
       }
+    }
+    return;
+  }
+
+  if (requestUrl.startsWith('/api/marvin/chat')) {
+    if (method !== 'POST') {
+      sendJson(res, 405, { message: 'Method not allowed' });
+      return;
+    }
+
+    try {
+      const body = (await parseRequestBody(req)) as MarvinChatRequestBody;
+      const message = typeof body.message === 'string' ? body.message.trim() : '';
+      if (!message) {
+        sendJson(res, 400, { message: 'message is required' });
+        return;
+      }
+
+      const location =
+        typeof body.metadata === 'object' && body.metadata != null && typeof body.metadata.location === 'string'
+          ? body.metadata.location.trim()
+          : '';
+      const providedConversationId =
+        typeof body.conversation_id === 'string' ? body.conversation_id.trim() : undefined;
+      const conversationId = providedConversationId && providedConversationId.length ? providedConversationId : randomUUID();
+
+      const baselineHistory =
+        marvinConversations.get(conversationId) ??
+        [
+          {
+            role: 'system',
+            content: MARVIN_SYSTEM_PROMPT,
+          } satisfies ChatMessage,
+        ];
+
+      const contextSegments: string[] = [];
+      if (location) {
+        // TODO: Replace stub hooks with live CMHC rent/vacancy lookups before building the LLM messages.
+        const rentVacancy = get_cmhc_rent_and_vacancy(location);
+        contextSegments.push(
+          `CMHC rent & vacancy snapshot (${rentVacancy.source}) for ${location}: one bedroom ~${rentVacancy.averageRents.oneBedroom.toLocaleString(
+            'en-CA',
+          )} CAD, two bedroom ~${rentVacancy.averageRents.twoBedroom.toLocaleString('en-CA')} CAD, vacancy approx. ${rentVacancy.vacancyRatePercent}%. ${
+            rentVacancy.note
+          }`,
+        );
+
+        // TODO: Replace stub hooks with live Statistics Canada demographics before building the LLM messages.
+        const demographics = get_statscan_demographics(location);
+        contextSegments.push(
+          `Statistics Canada demographics (${demographics.source}) for ${location}: population around ${
+            demographics.population
+          }, median age ${demographics.medianAge}, median household income ~$${demographics.householdIncome.toLocaleString(
+            'en-CA',
+          )} and approximately ${demographics.englishOrFrenchPercent}% English/French speakers. ${demographics.note}`,
+        );
+      }
+
+      // TODO: Replace stub hook with live MLI Select program data before building the LLM messages.
+      const mliSummary = get_mli_select_summary();
+      contextSegments.push(
+        `MLI Select summary (${mliSummary.source}): leverage tiers ${mliSummary.tiers
+          .map((tier) => `${tier.leverage} (${tier.requirement})`)
+          .join('; ')} with insurance premiums roughly ${mliSummary.insurancePremiumRangePercent}. ${mliSummary.sustainabilityNotes}`,
+      );
+
+      const contextMessage =
+        contextSegments.length > 0
+          ? ({
+              role: 'system',
+              content: `Reference data (placeholders, advise users to confirm with professionals):\n- ${contextSegments.join('\n- ')}`,
+            } satisfies ChatMessage)
+          : null;
+
+      const userMessage: ChatMessage = {
+        role: 'user',
+        content: message,
+      };
+
+      const requestMessages = contextMessage
+        ? [...baselineHistory, contextMessage, userMessage]
+        : [...baselineHistory, userMessage];
+
+      const reply = await chatCompletion(requestMessages);
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: reply,
+      };
+
+      const updatedHistory = trimMarvinHistory([...baselineHistory, userMessage, assistantMessage]);
+      marvinConversations.set(conversationId, updatedHistory);
+
+      sendJson(res, 200, {
+        reply,
+        conversation_id: conversationId,
+      });
+    } catch (error) {
+      console.error('Marvin chat error:', error);
+      sendJson(res, 500, { message: 'Unable to process Marvin chat request' });
     }
     return;
   }

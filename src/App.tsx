@@ -4,6 +4,7 @@ import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitA
 import diskIcon from '../disk.png';
 import headerLogo from '../logo2.png';
 import './App.css';
+import MarvinSidebar from './components/MarvinSidebar.tsx';
 import {
   BarChart,
   Bar,
@@ -1059,25 +1060,26 @@ function App() {
   ];
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div className="header-top">
-          <div className="header-branding">
-            <img src={headerLogo} alt="MLI Calc" className="app-logo" />
+    <>
+      <div className="app-shell">
+        <header className="app-header">
+          <div className="header-top">
+            <div className="header-branding">
+              <img src={headerLogo} alt="MLI Calc" className="app-logo" />
+            </div>
+            <div className="baseline-chip">
+              Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
+            </div>
           </div>
-          <div className="baseline-chip">
-            Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
-          </div>
+        </header>
+
+        <div className="header-metrics">
+          {metricCards.map((card) => (
+            <MetricCardView key={card.label} card={card} />
+          ))}
         </div>
-      </header>
 
-      <div className="header-metrics">
-        {metricCards.map((card) => (
-          <MetricCardView key={card.label} card={card} />
-        ))}
-      </div>
-
-      <section className="panel-sections">
+        <section className="panel-sections">
         <div className="panel scenario-panel full-width-panel">
           <div className="panel-header">
             <h2>Scenario Library</h2>
@@ -1703,8 +1705,10 @@ function App() {
             <p className="vacancy-source">Source: CMHC Rental Market Survey.</p>
           </div>
         </div>
-      </section>
-    </div>
+        </section>
+      </div>
+      <MarvinSidebar />
+    </>
   );
 }
 
