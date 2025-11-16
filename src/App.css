@@ -331,6 +331,10 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  width: 86.25%;
+  max-width: 897px;
+  max-height: 59.5px;
+  min-height: 46.75px;
 }
 
 .vacancy-summary-wrapper {
@@ -1149,6 +1153,7 @@ input[type='number'] {
 
 .chart-header h3 {
   margin: 0;
+  font-size: 1.5rem;
 }
 
 .chart-header p {

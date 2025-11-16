@@ -470,7 +470,7 @@ const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
   const isPositive = numericValue >= 0;
   const yPosition = Number(y);
   const labelY = isPositive ? yPosition - 8 : yPosition + 20;
-  const labelColor = isPositive ? '#0f172a' : '#b91c1c';
+  const labelColor = isPositive ? '#0f172a' : '#f8fafc';
   const xPosition = Number(x) + Number(width) / 2;
 
   return (
@@ -554,11 +554,11 @@ function App() {
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
     const data: CashFlowBar[] = [
-      { name: 'Gross Rent', value: metrics.grossRentAnnual, color: '#0ea5e9' },
-      { name: 'Other Income', value: metrics.otherIncomeAnnual, color: '#38bdf8' },
-      { name: 'Operating Expenses', value: -metrics.operatingExpensesAnnual, color: '#fb7185' },
-      { name: 'Debt Service', value: -metrics.debtServiceAnnual, color: '#f97316' },
-      { name: 'Net Cash Flow', value: metrics.cashFlow, color: '#16a34a', isTotal: true },
+      { name: 'Gross Rent', value: metrics.grossRentAnnual, color: '#0f172a' },
+      { name: 'Other Income', value: metrics.otherIncomeAnnual, color: '#1e293b' },
+      { name: 'Operating Expenses', value: -metrics.operatingExpensesAnnual, color: '#334155' },
+      { name: 'Debt Service', value: -metrics.debtServiceAnnual, color: '#475569' },
+      { name: 'Net Cash Flow', value: metrics.cashFlow, color: '#0a0f17', isTotal: true },
     ];
 
     const values = data.map((item) => item.value);
