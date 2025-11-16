@@ -1562,34 +1562,36 @@ function App() {
                     </select>
                   </label>
                 </div>
-                {selectedMarketRentRow ? (
-                  <table className="market-rent-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Unit Type</th>
-                        <th scope="col">Average Rent</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { label: 'Bachelor', value: selectedMarketRentRow.bachelor },
-                        { label: '1 Bedroom', value: selectedMarketRentRow.oneBedroom },
-                        { label: '2 Bedroom', value: selectedMarketRentRow.twoBedroom },
-                        { label: '3 Bedroom', value: selectedMarketRentRow.threeBedroom },
-                        ...(selectedMarketRentRow.fourBedroom > 0
-                          ? [{ label: '4 Bedroom', value: selectedMarketRentRow.fourBedroom }]
-                          : []),
-                      ].map((row) => (
-                        <tr key={row.label}>
-                          <th scope="row">{row.label}</th>
-                          <td>{currencyFormatter.format(row.value)}</td>
+                <div className="market-rent-table-wrapper">
+                  {selectedMarketRentRow ? (
+                    <table className="market-rent-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Unit Type</th>
+                          <th scope="col">Average Rent</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <p className="muted">Select a city to view rent data.</p>
-                )}
+                      </thead>
+                      <tbody>
+                        {[
+                          { label: 'Bachelor', value: selectedMarketRentRow.bachelor },
+                          { label: '1 Bedroom', value: selectedMarketRentRow.oneBedroom },
+                          { label: '2 Bedroom', value: selectedMarketRentRow.twoBedroom },
+                          { label: '3 Bedroom', value: selectedMarketRentRow.threeBedroom },
+                          ...(selectedMarketRentRow.fourBedroom > 0
+                            ? [{ label: '4 Bedroom', value: selectedMarketRentRow.fourBedroom }]
+                            : []),
+                        ].map((row) => (
+                          <tr key={row.label}>
+                            <th scope="row">{row.label}</th>
+                            <td>{currencyFormatter.format(row.value)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="muted market-rent-placeholder">Select a city to view rent data.</p>
+                  )}
+                </div>
               </>
             )}
           </div>
