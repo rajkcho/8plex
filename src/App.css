@@ -1144,6 +1144,16 @@ input[type='number'] {
 .header-metrics .metric-card {
   min-width: 180px;
   flex: 1;
+  background: rgba(101, 126, 152, 0.3);
+  color: #fff;
+  box-shadow: 0 12px 25px rgba(101, 126, 152, 0.35);
+  border: 1px solid rgba(101, 126, 152, 0.45);
+}
+
+.header-metrics .metric-card .metric-label,
+.header-metrics .metric-card .metric-value,
+.header-metrics .metric-card .metric-subtitle {
+  color: #fff;
 }
 
 .charts-grid {
