@@ -595,6 +595,10 @@ function App() {
       postalCode: null as string | null,
     };
   }, [selectedVacancyCity, currentMarketRentCity]);
+  const baselineGrossRentMonthly = useMemo(
+    () => assumptions.unitMix.reduce((sum, unit) => sum + unit.units * unit.rent, 0),
+    [assumptions.unitMix],
+  );
   const sensitivityAxisCount = 5;
   const rentShifts = useMemo(() => {
     const half = Math.floor(sensitivityAxisCount / 2);
@@ -609,9 +613,10 @@ function App() {
     (valueSelector: (metrics: FinanceMetrics) => number) =>
       interestShifts.map((interestDelta) =>
         rentShifts.map((rentDelta) => {
+          const grossRentScale = baselineGrossRentMonthly > 0 ? 1 + rentDelta : 1;
           const scaledUnitMix = assumptions.unitMix.map((unit) => ({
             ...unit,
-            rent: unit.rent * (1 + rentDelta),
+            rent: unit.rent * grossRentScale,
           }));
           const scenarioAssumptions = {
             ...assumptions,
@@ -622,7 +627,7 @@ function App() {
           return valueSelector(metrics);
         }),
       ),
-    [assumptions, interestShifts, rentShifts],
+    [assumptions, baselineGrossRentMonthly, interestShifts, rentShifts],
   );
   const cashFlowMatrix = useMemo(() => buildSensitivityMatrix((metrics) => metrics.cashFlow), [buildSensitivityMatrix]);
   const cashOnCashMatrix = useMemo(() => buildSensitivityMatrix((metrics) => metrics.cashOnCash), [buildSensitivityMatrix]);
