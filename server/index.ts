@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import zlib from 'node:zlib';
 import unzipper from 'unzipper';
 import type { File as ZipFileEntry } from 'unzipper';
-import { createScenarioStore } from './scenarioStore';
+import { createScenarioStore } from './scenarioStore.ts';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const store = createScenarioStore();
