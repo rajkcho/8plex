@@ -4,7 +4,7 @@ import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type UnitA
 import diskIcon from '../disk.png';
 import headerLogo from '../logo2.png';
 import './App.css';
-import MarvinSidebar from './components/MarvinSidebar.tsx';
+import MaggiSidebar from './components/MaggiSidebar.tsx';
 import {
   BarChart,
   Bar,
@@ -1707,7 +1707,7 @@ function App() {
         </div>
         </section>
       </div>
-      <MarvinSidebar />
+      <MaggiSidebar />
     </>
   );
 }

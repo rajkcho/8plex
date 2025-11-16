@@ -1,26 +1,32 @@
-.marvin-launcher {
+.maggi-launcher {
   position: fixed;
   right: 24px;
   bottom: 24px;
   z-index: 999;
   border: none;
-  background: #0f172a;
-  color: #fff;
-  font-weight: 600;
-  padding: 12px 20px;
-  border-radius: 999px;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+  background: transparent;
+  padding: 0;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.marvin-launcher:hover,
-.marvin-launcher:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.45);
+.maggi-launcher__image {
+  width: 120px;
+  height: auto;
+  display: block;
+  pointer-events: none;
 }
 
-.marvin-sidebar {
+.maggi-launcher__label {
+  position: absolute;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.maggi-sidebar {
   position: fixed;
   top: 0;
   right: 0;
@@ -35,11 +41,11 @@
   z-index: 1000;
 }
 
-.marvin-sidebar.open {
+.maggi-sidebar.open {
   transform: translateX(0);
 }
 
-.marvin-sidebar__header {
+.maggi-sidebar__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -48,20 +54,34 @@
   background: #fff;
 }
 
-.marvin-title {
+.maggi-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.maggi-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #0f172a;
+}
+
+.maggi-title {
   font-size: 1.25rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
-.marvin-subtitle {
+.maggi-subtitle {
   margin: 0;
   font-size: 0.85rem;
   color: #475569;
 }
 
-.marvin-close {
+.maggi-close {
   border: none;
   background: transparent;
   font-size: 1.5rem;
@@ -69,37 +89,39 @@
   color: #475569;
 }
 
-.marvin-sidebar__body {
+.maggi-sidebar__body {
   flex: 1;
   display: flex;
   flex-direction: column;
   padding: 16px;
   gap: 12px;
+  min-height: 0;
 }
 
-.marvin-messages {
+.maggi-messages {
   flex: 1;
   overflow-y: auto;
   padding-right: 4px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
 }
 
-.marvin-message {
+.maggi-message {
   display: flex;
 }
 
-.marvin-message--user {
+.maggi-message--user {
   justify-content: flex-end;
 }
 
-.marvin-message--assistant,
-.marvin-message--system {
+.maggi-message--assistant,
+.maggi-message--system {
   justify-content: flex-start;
 }
 
-.marvin-message__bubble {
+.maggi-message__bubble {
   max-width: 85%;
   padding: 10px 14px;
   border-radius: 18px;
@@ -111,23 +133,23 @@
   white-space: pre-line;
 }
 
-.marvin-message--user .marvin-message__bubble {
+.maggi-message--user .maggi-message__bubble {
   background: #2563eb;
   color: #fff;
 }
 
-.marvin-message__bubble--ghost {
+.maggi-message__bubble--ghost {
   background: #e2e8f0;
   color: #475569;
   box-shadow: none;
 }
 
-.marvin-input-row {
+.maggi-input-row {
   display: flex;
   gap: 8px;
 }
 
-.marvin-input {
+.maggi-input {
   flex: 1;
   border: 1px solid rgba(15, 23, 42, 0.2);
   border-radius: 999px;
@@ -135,7 +157,7 @@
   font-size: 0.95rem;
 }
 
-.marvin-send {
+.maggi-send {
   border: none;
   background: #0f172a;
   color: #fff;
@@ -146,12 +168,12 @@
   transition: opacity 0.2s ease;
 }
 
-.marvin-send:disabled {
+.maggi-send:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.marvin-error {
+.maggi-error {
   color: #b91c1c;
   font-size: 0.85rem;
   margin: 0;

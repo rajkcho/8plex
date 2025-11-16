@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import './MarvinSidebar.css';
+import './MaggiSidebar.css';
+import maggiIcon from '../../maggi.png';
+import maggiButtonImage from '../../maggib.png';
 
-type MarvinMessage = {
+type MaggiMessage = {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
 };
 
-type MarvinSidebarProps = {
+type MaggiSidebarProps = {
   locationHint?: string | null;
 };
 
@@ -22,17 +24,17 @@ const createMessageId = (): string => {
   }
 };
 
-const initialMessage: MarvinMessage = {
-  id: 'marvin-intro',
+const initialMessage: MaggiMessage = {
+  id: 'maggi-intro',
   role: 'assistant',
   content:
-    'Hi, I am Marvin. Ask me about CMHC rent data, vacancy trends, StatsCan demographics, or how MLI Select assumptions might work for your project.',
+    'Woof! I\'m Maggi, your feisty miniature schnauzer who doubles as a real estate nerd. Ask about CMHC rents, vacancy drama, StatsCan people stats, or how MLI Select treats your latest doghouse-sized high rise.',
 };
 
-const MarvinSidebar = ({ locationHint }: MarvinSidebarProps) => {
+const MaggiSidebar = ({ locationHint }: MaggiSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<MarvinMessage[]>([initialMessage]);
+  const [messages, setMessages] = useState<MaggiMessage[]>([initialMessage]);
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ const MarvinSidebar = ({ locationHint }: MarvinSidebarProps) => {
     if (!trimmed || isSending) {
       return;
     }
-    const pendingMessage: MarvinMessage = {
+    const pendingMessage: MaggiMessage = {
       id: createMessageId(),
       role: 'user',
       content: trimmed,
@@ -82,7 +84,7 @@ const MarvinSidebar = ({ locationHint }: MarvinSidebarProps) => {
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl('/api/marvin/chat'), {
+      const response = await fetch(buildApiUrl('/api/maggi/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,7 +100,7 @@ const MarvinSidebar = ({ locationHint }: MarvinSidebarProps) => {
       const payload = (await response.json()) as { reply?: string; conversation_id?: string };
       const reply = payload.reply?.trim();
       if (!reply) {
-        throw new Error('Marvin did not return a response.');
+        throw new Error('Maggi got distracted and forgot to reply.');
       }
       setConversationId(payload.conversation_id ?? conversationId ?? null);
       setMessages((prev) => [
@@ -117,7 +119,7 @@ const MarvinSidebar = ({ locationHint }: MarvinSidebarProps) => {
         {
           id: createMessageId(),
           role: 'system',
-          content: 'Unable to reach Marvin right now. Please try again shortly.',
+          content: 'Maggi is busy chasing cap rates—try again in a moment.',
         },
       ]);
     } finally {
@@ -136,38 +138,43 @@ const MarvinSidebar = ({ locationHint }: MarvinSidebarProps) => {
     <>
       <button
         type="button"
-        className="marvin-launcher"
+        className="maggi-launcher"
         onClick={handleToggle}
         aria-expanded={isOpen}
-        aria-controls="marvin-sidebar"
+        aria-controls="maggi-sidebar"
+        aria-label="Ask Maggi"
       >
-        Ask Marvin
+        <img src={maggiButtonImage} alt="Ask Maggi" className="maggi-launcher__image" />
+        <span className="maggi-launcher__label">Ask Maggi</span>
       </button>
-      <aside id="marvin-sidebar" className={`marvin-sidebar${isOpen ? ' open' : ''}`} aria-hidden={!isOpen}>
-        <header className="marvin-sidebar__header">
-          <div>
-            <p className="marvin-title">Marvin</p>
-            <p className="marvin-subtitle">CMHC & demographics assistant</p>
+      <aside id="maggi-sidebar" className={`maggi-sidebar${isOpen ? ' open' : ''}`} aria-hidden={!isOpen}>
+        <header className="maggi-sidebar__header">
+          <div className="maggi-heading">
+            <img src={maggiIcon} alt="Maggi the miniature schnauzer" className="maggi-avatar" />
+            <div>
+              <p className="maggi-title">Maggi</p>
+              <p className="maggi-subtitle">Feisty schnauzer & CMHC whisperer</p>
+            </div>
           </div>
-          <button type="button" className="marvin-close" onClick={handleToggle} aria-label="Close Marvin chat">
+          <button type="button" className="maggi-close" onClick={handleToggle} aria-label="Close Maggi chat">
             ×
           </button>
         </header>
-        <div className="marvin-sidebar__body">
-          <div className="marvin-messages" ref={scrollContainerRef}>
+        <div className="maggi-sidebar__body">
+          <div className="maggi-messages" ref={scrollContainerRef}>
             {messages.map((message) => (
-              <div key={message.id} className={`marvin-message marvin-message--${message.role}`}>
-                <div className="marvin-message__bubble">{message.content}</div>
+              <div key={message.id} className={`maggi-message maggi-message--${message.role}`}>
+                <div className="maggi-message__bubble">{message.content}</div>
               </div>
             ))}
             {isSending && (
-              <div className="marvin-message marvin-message--assistant">
-                <div className="marvin-message__bubble marvin-message__bubble--ghost">Marvin is typing…</div>
+              <div className="maggi-message maggi-message--assistant">
+                <div className="maggi-message__bubble maggi-message__bubble--ghost">Maggi is thinking…</div>
               </div>
             )}
           </div>
           <form
-            className="marvin-input-row"
+            className="maggi-input-row"
             onSubmit={(event) => {
               event.preventDefault();
               handleSubmit();
@@ -176,22 +183,22 @@ const MarvinSidebar = ({ locationHint }: MarvinSidebarProps) => {
             <input
               ref={inputRef}
               type="text"
-              className="marvin-input"
-              placeholder="Ask about CMHC, StatsCan, or MLI Select…"
+              className="maggi-input"
+              placeholder="Ask Maggi about CMHC, StatsCan, or MLI Select…"
               value={inputValue}
               onChange={(event) => setInputValue(event.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isSending}
             />
-            <button type="submit" className="marvin-send" disabled={!canSend}>
+            <button type="submit" className="maggi-send" disabled={!canSend}>
               Send
             </button>
           </form>
-          {error && <p className="marvin-error">{error}</p>}
+          {error && <p className="maggi-error">{error}</p>}
         </div>
       </aside>
     </>
   );
 };
 
-export default MarvinSidebar;
+export default MaggiSidebar;

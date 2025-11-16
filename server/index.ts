@@ -13,7 +13,7 @@ const PORT = Number(process.env.PORT ?? 4000);
 const store = createScenarioStore();
 const CMHC_ENDPOINT = 'https://www03.cmhc-schl.gc.ca/hmip-pimh/en/TableMapChart/ExportTable';
 const VACANCY_CACHE_MS = 1000 * 60 * 60; // 1 hour
-const MAX_MARVIN_HISTORY = 30;
+const MAX_MAGGI_HISTORY = 30;
 
 try {
   dns.setDefaultResultOrder?.('ipv4first');
@@ -81,7 +81,7 @@ type DemographicSummary = {
   sources: { census: string; crime: string };
 };
 
-type MarvinChatRequestBody = {
+type MaggiChatRequestBody = {
   message?: unknown;
   conversation_id?: unknown;
   metadata?: {
@@ -114,10 +114,10 @@ type PlaceholderMliSummary = {
   source: string;
 };
 
-const MARVIN_SYSTEM_PROMPT =
-  'You are Marvin, an AI assistant embedded in a Canadian real estate investment website. You specialize in CMHC data, Statistics Canada demographic data, and the CMHC MLI Select program. You help users reason about rents, vacancy, demographics, affordability, and MLI Select assumptions. If you do not know something or there is no data, say so clearly. Do not invent specific CMHC or StatsCan numbers. For legal, tax, or lending decisions, give only general educational information and advise users to confirm with a professional.';
+const MAGGI_SYSTEM_PROMPT =
+  'You are Maggi, a feisty miniature schnauzer with a funny streak who is embedded in a Canadian real estate investment website. You specialize in CMHC data, Statistics Canada demographic data, and the CMHC MLI Select program. You crack light jokes but never fabricate CMHC or StatsCan numbers, and you remind people to confirm legal, tax, or lending decisions with a professional. Use playful language when appropriate while staying factual.';
 
-const marvinConversations = new Map<string, ChatMessage[]>();
+const maggiConversations = new Map<string, ChatMessage[]>();
 
 const get_cmhc_rent_and_vacancy = (location: string): PlaceholderRentVacancy => ({
   location,
@@ -150,12 +150,12 @@ const get_mli_select_summary = (): PlaceholderMliSummary => ({
   source: 'Placeholder program summary',
 });
 
-const trimMarvinHistory = (messages: ChatMessage[]): ChatMessage[] => {
-  if (messages.length <= MAX_MARVIN_HISTORY) {
+const trimMaggiHistory = (messages: ChatMessage[]): ChatMessage[] => {
+  if (messages.length <= MAX_MAGGI_HISTORY) {
     return messages;
   }
   const [systemMessage, ...rest] = messages;
-  const trimmed = rest.slice(-MAX_MARVIN_HISTORY);
+  const trimmed = rest.slice(-MAX_MAGGI_HISTORY);
   return [systemMessage, ...trimmed];
 };
 
@@ -883,14 +883,15 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
     return;
   }
 
-  if (requestUrl.startsWith('/api/marvin/chat')) {
+  const isMaggiChatRoute = requestUrl.startsWith('/api/maggi/chat') || requestUrl.startsWith('/api/marvin/chat');
+  if (isMaggiChatRoute) {
     if (method !== 'POST') {
       sendJson(res, 405, { message: 'Method not allowed' });
       return;
     }
 
     try {
-      const body = (await parseRequestBody(req)) as MarvinChatRequestBody;
+      const body = (await parseRequestBody(req)) as MaggiChatRequestBody;
       const message = typeof body.message === 'string' ? body.message.trim() : '';
       if (!message) {
         sendJson(res, 400, { message: 'message is required' });
@@ -906,11 +907,11 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
       const conversationId = providedConversationId && providedConversationId.length ? providedConversationId : randomUUID();
 
       const baselineHistory =
-        marvinConversations.get(conversationId) ??
+        maggiConversations.get(conversationId) ??
         [
           {
             role: 'system',
-            content: MARVIN_SYSTEM_PROMPT,
+            content: MAGGI_SYSTEM_PROMPT,
           } satisfies ChatMessage,
         ];
 
@@ -968,16 +969,16 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
         content: reply,
       };
 
-      const updatedHistory = trimMarvinHistory([...baselineHistory, userMessage, assistantMessage]);
-      marvinConversations.set(conversationId, updatedHistory);
+      const updatedHistory = trimMaggiHistory([...baselineHistory, userMessage, assistantMessage]);
+      maggiConversations.set(conversationId, updatedHistory);
 
       sendJson(res, 200, {
         reply,
         conversation_id: conversationId,
       });
     } catch (error) {
-      console.error('Marvin chat error:', error);
-      sendJson(res, 500, { message: 'Unable to process Marvin chat request' });
+      console.error('Maggi chat error:', error);
+      sendJson(res, 500, { message: 'Unable to process Maggi chat request' });
     }
     return;
   }
