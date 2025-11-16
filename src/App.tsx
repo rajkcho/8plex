@@ -19,7 +19,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import type { TooltipProps, LabelProps } from 'recharts';
+import type { TooltipProps } from 'recharts';
 import rentsCsv from '../rentsv2.csv?raw';
 import cmhcCmaList from './assets/cmhc-cmas.json';
 import vacancyFallbackImage from './assets/vacancy-fallback.jpg';
@@ -461,24 +461,7 @@ const WaterfallTooltip = ({ active, payload }: WaterfallTooltipProps) => {
   );
 };
 
-const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
-  if (x == null || y == null || width == null || value == null) {
-    return null;
-  }
 
-  const numericValue = Number(value);
-  const isPositive = numericValue >= 0;
-  const yPosition = Number(y);
-  const labelY = isPositive ? yPosition - 8 : yPosition + 15;
-  const labelColor = isPositive ? '#0f172a' : '#f8fafc';
-  const xPosition = Number(x) + Number(width) / 2;
-
-  return (
-    <text x={xPosition} y={labelY} textAnchor="middle" fill={labelColor} fontSize="0.95rem" fontWeight={600}>
-      {currencyFormatter.format(numericValue)}
-    </text>
-  );
-};
 
 type ScenarioComparisonBar = {
   id: string;
@@ -1746,7 +1729,8 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                 {waterfallData.map((entry) => (
                   <Cell key={entry.name} fill={entry.isTotal ? '#16a34a' : entry.color} />
                 ))}
-                <LabelList dataKey="value" content={<WaterfallLabel />} />
+                <LabelList dataKey="value" position="top" formatter={(value) => (typeof value === 'number' && value > 0 ? currencyFormatter.format(value) : '')} />
+                <LabelList dataKey="value" position="insideBottom" formatter={(value) => (typeof value === 'number' && value <= 0 ? currencyFormatter.format(value) : '')} fill="#fff" />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -1777,7 +1761,8 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                   {scenarioComparisonData.map((entry) => (
                     <Cell key={entry.id} fill={entry.cashFlow >= 0 ? '#16a34a' : '#dc2626'} />
                   ))}
-                  <LabelList dataKey="cashFlow" content={<WaterfallLabel />} />
+                  <LabelList dataKey="cashFlow" position="top" formatter={(value) => (typeof value === 'number' && value > 0 ? currencyFormatter.format(value) : '')} />
+                  <LabelList dataKey="cashFlow" position="insideBottom" formatter={(value) => (typeof value === 'number' && value <= 0 ? currencyFormatter.format(value) : '')} fill="#fff" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
