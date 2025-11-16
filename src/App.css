@@ -327,7 +327,7 @@
   gap: 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 1rem;
-  padding: 0.85rem 1rem;
+  padding: 0.65rem 0.9rem;
   background: #f8fafc;
   position: relative;
   overflow: hidden;
@@ -335,9 +335,8 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  width: 50%;
-  max-width: 520px;
-  min-width: 240px;
+  max-height: 140px;
+  min-height: 90px;
 }
 
 .vacancy-summary-wrapper {
