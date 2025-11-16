@@ -118,23 +118,6 @@ type VacancyChartDatum = {
   quality: string | null;
 };
 
-type MarketDemographicSummary = {
-  postalCode: string;
-  location: { latitude: number; longitude: number; label?: string | null };
-  censusRegion: { level: string; geoid: string; name: string; label?: string };
-  householdIncome: number | null;
-  englishPercent: number | null;
-  englishDetails: { englishOnly: number; englishAndFrench: number; total: number };
-  crimeRate: {
-    per100k: number | null;
-    referenceYear: number | null;
-    geographyName: string;
-    level: string | null;
-    code: string | null;
-  } | null;
-  sources?: { census?: string; crime?: string };
-};
-
 const parseCsvLine = (line: string): string[] => {
   const sanitizedLine = line.replace(/^\uFEFF/, '');
   const values: string[] = [];
@@ -521,10 +504,6 @@ function App() {
   const [newExpenseLabel, setNewExpenseLabel] = useState('');
   const [newExpenseValue, setNewExpenseValue] = useState('');
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
-  const [postalCodeQuery, setPostalCodeQuery] = useState('');
-  const [demographicResult, setDemographicResult] = useState<MarketDemographicSummary | null>(null);
-  const [demographicLoading, setDemographicLoading] = useState(false);
-  const [demographicError, setDemographicError] = useState<string | null>(null);
 
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
@@ -722,33 +701,6 @@ function App() {
       };
     });
   }, [metrics.grossRentAnnual, percentExpenseValues]);
-
-  const handleDemographicSearch = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const trimmed = postalCodeQuery.trim();
-    if (!trimmed) {
-      setDemographicError('Enter a postal code');
-      setDemographicResult(null);
-      return;
-    }
-    setDemographicLoading(true);
-    setDemographicError(null);
-    try {
-      const response = await fetch(
-        buildScenarioUrl(`/api/market-data/demographics?postalCode=${encodeURIComponent(trimmed)}`),
-      );
-      const payload = (await response.json().catch(() => ({}))) as MarketDemographicSummary & { message?: string };
-      if (!response.ok) {
-        throw new Error(payload?.message ?? 'Unable to load demographic data');
-      }
-      setDemographicResult(payload);
-    } catch (error) {
-      setDemographicResult(null);
-      setDemographicError(error instanceof Error ? error.message : 'Unable to load demographic data');
-    } finally {
-      setDemographicLoading(false);
-    }
-  };
 
   const handlePurchasePriceChange = (value: number) => {
     setAssumptions((prev) => {
@@ -1582,86 +1534,11 @@ function App() {
       <section className="panel market-data-panel full-width-panel">
         <div className="panel-header">
           <h2>Market Data</h2>
-          <p>Blend postal-code demographics with rent benchmarks and CMHC vacancy trends.</p>
+          <p>Reference CMHC rent benchmarks and vacancy trends side by side.</p>
         </div>
         <div className="market-data-grid">
-          <div className="demographic-card">
-            <div className="demographic-card-header">
-              <h3>Postal Code Demographics</h3>
-              <p>Pull 2021 census stats for any Canadian postal code.</p>
-            </div>
-            <form className="demographic-form" onSubmit={handleDemographicSearch}>
-              <label htmlFor="postalCodeInput" className="sr-only">
-                Postal code
-              </label>
-              <input
-                id="postalCodeInput"
-                type="text"
-                placeholder="e.g. M5V 2T6"
-                value={postalCodeQuery}
-                onChange={(event) => {
-                  setPostalCodeQuery(event.target.value.toUpperCase());
-                  if (demographicError) {
-                    setDemographicError(null);
-                  }
-                }}
-              />
-              <button type="submit" disabled={demographicLoading}>
-                {demographicLoading ? 'Searching…' : 'Search'}
-              </button>
-            </form>
-            {demographicError ? <p className="demographic-message error">{demographicError}</p> : null}
-            {demographicLoading ? (
-              <p className="demographic-message">Fetching demographic data…</p>
-            ) : demographicResult ? (
-              <>
-                <table className="demographic-table">
-                  <tbody>
-                    <tr>
-                      <th scope="row">Median household income</th>
-                      <td>
-                        {demographicResult.householdIncome != null
-                          ? currencyFormatter.format(demographicResult.householdIncome)
-                          : '—'}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th scope="row">Crime rate (per 100k)</th>
-                      <td>
-                        {demographicResult.crimeRate?.per100k != null
-                          ? `${Math.round(demographicResult.crimeRate.per100k).toLocaleString('en-CA')}`
-                          : '—'}
-                        <span className="demographic-note">
-                          {demographicResult.crimeRate?.referenceYear
-                            ? `${demographicResult.crimeRate.referenceYear} · ${demographicResult.crimeRate.geographyName}`
-                            : 'StatsCan police-reported crimes'}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th scope="row">% English speakers</th>
-                      <td>
-                        {demographicResult.englishPercent != null
-                          ? `${demographicResult.englishPercent.toFixed(1)}%`
-                          : '—'}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <p className="demographic-footnote">
-                  Based on{' '}
-                  {demographicResult.censusRegion.label ??
-                    `${demographicResult.censusRegion.level} ${demographicResult.censusRegion.name}`}
-                </p>
-              </>
-            ) : (
-              <p className="demographic-message">
-                Enter a Canadian postal code to see local household income, crime, and language stats.
-              </p>
-            )}
-          </div>
-          <div className="rent-card">
-            <div className="demographic-card-header">
+          <div className="market-card rent-card">
+            <div className="market-card-header">
               <h3>Market Rent Benchmarks</h3>
               <p>Reference CMHC HHPI data for select municipalities.</p>
             </div>
@@ -1716,90 +1593,90 @@ function App() {
               </>
             )}
           </div>
-        </div>
-        <div className="vacancy-section">
-          <div className="vacancy-controls">
-            <div className="vacancy-copy">
-              <p className="vacancy-title">City vacancy rates</p>
-              <p className="vacancy-subtitle">Latest CMHC survey periods (highest available frequency)</p>
+          <div className="market-card vacancy-card">
+            <div className="market-card-header">
+              <h3>City vacancy rates</h3>
+              <p>Latest CMHC survey periods (highest available frequency).</p>
             </div>
-            <label htmlFor="vacancyCitySelect">
-              City
-              <select
-                id="vacancyCitySelect"
-                value={selectedVacancyMetro}
-                onChange={(event) => setSelectedVacancyMetro(event.target.value)}
-                disabled={!cmhcCities.length}
-              >
-                {cmhcCities.map((city) => (
-                  <option key={city.geographyId} value={city.geographyId}>
-                    {city.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {latestVacancyPoint && selectedVacancyCity ? (
-            <div className="vacancy-summary">
-              <div>
-                <p className="vacancy-summary-label">Latest reading</p>
-                <p className="vacancy-summary-value">
-                  {formatVacancyRate(latestVacancyPoint.vacancyRate)}
-                  <span>{latestVacancyPoint.displayLabel}</span>
-                </p>
-              </div>
-              <p className="vacancy-summary-city">{selectedVacancyCity.name}</p>
-            </div>
-          ) : null}
-          <div className="vacancy-chart-wrapper">
-            {vacancyError ? (
-              <p className="vacancy-message error">{vacancyError}</p>
-            ) : vacancyLoading && !vacancyChartData.length ? (
-              <p className="vacancy-message">Loading CMHC vacancy data…</p>
-            ) : vacancyChartData.length ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={vacancyChartData}
-                  margin={{
-                    top: 10,
-                    right: 12,
-                    left: 0,
-                    bottom: 6,
-                  }}
+            <div className="vacancy-controls">
+              <label htmlFor="vacancyCitySelect">
+                City
+                <select
+                  id="vacancyCitySelect"
+                  value={selectedVacancyMetro}
+                  onChange={(event) => setSelectedVacancyMetro(event.target.value)}
+                  disabled={!cmhcCities.length}
                 >
-                  <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
-                  <XAxis dataKey="displayLabel" tick={{ fontSize: 12, fill: '#475569' }} interval="preserveEnd" />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: '#475569' }}
-                    tickFormatter={(value) =>
-                      typeof value === 'number' ? `${vacancyNumberFormatter.format(value)}%` : value
-                    }
-                    width={56}
-                    domain={[
-                      0,
-                      (dataMax) =>
-                        typeof dataMax === 'number' && Number.isFinite(dataMax)
-                          ? Math.max(Math.ceil(dataMax + 1), 5)
-                          : 5,
-                    ]}
-                  />
-                  <Tooltip content={<VacancyTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="vacancyRate"
-                    stroke="#2563eb"
-                    strokeWidth={3}
-                    dot={{ r: 2 }}
-                    activeDot={{ r: 4 }}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="vacancy-message">Vacancy data is unavailable for this city.</p>
-            )}
+                  {cmhcCities.map((city) => (
+                    <option key={city.geographyId} value={city.geographyId}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {latestVacancyPoint && selectedVacancyCity ? (
+              <div className="vacancy-summary">
+                <div>
+                  <p className="vacancy-summary-label">Latest reading</p>
+                  <p className="vacancy-summary-value">
+                    {formatVacancyRate(latestVacancyPoint.vacancyRate)}
+                    <span>{latestVacancyPoint.displayLabel}</span>
+                  </p>
+                </div>
+                <p className="vacancy-summary-city">{selectedVacancyCity.name}</p>
+              </div>
+            ) : null}
+            <div className="vacancy-chart-wrapper">
+              {vacancyError ? (
+                <p className="vacancy-message error">{vacancyError}</p>
+              ) : vacancyLoading && !vacancyChartData.length ? (
+                <p className="vacancy-message">Loading CMHC vacancy data…</p>
+              ) : vacancyChartData.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={vacancyChartData}
+                    margin={{
+                      top: 10,
+                      right: 12,
+                      left: 0,
+                      bottom: 6,
+                    }}
+                  >
+                    <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
+                    <XAxis dataKey="displayLabel" tick={{ fontSize: 12, fill: '#475569' }} interval="preserveEnd" />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: '#475569' }}
+                      tickFormatter={(value) =>
+                        typeof value === 'number' ? `${vacancyNumberFormatter.format(value)}%` : value
+                      }
+                      width={56}
+                      domain={[
+                        0,
+                        (dataMax) =>
+                          typeof dataMax === 'number' && Number.isFinite(dataMax)
+                            ? Math.max(Math.ceil(dataMax + 1), 5)
+                            : 5,
+                      ]}
+                    />
+                    <Tooltip content={<VacancyTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="vacancyRate"
+                      stroke="#2563eb"
+                      strokeWidth={3}
+                      dot={{ r: 2 }}
+                      activeDot={{ r: 4 }}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="vacancy-message">Vacancy data is unavailable for this city.</p>
+              )}
+            </div>
+            <p className="vacancy-source">Source: CMHC Rental Market Survey.</p>
           </div>
-          <p className="vacancy-source">Source: CMHC Rental Market Survey.</p>
         </div>
       </section>
     </div>

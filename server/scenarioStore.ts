@@ -22,18 +22,49 @@ type ScenarioRow = {
   assumptions: unknown;
 };
 
+const isReadOnlyFsError = (error: unknown): error is NodeJS.ErrnoException => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const code = (error as NodeJS.ErrnoException).code;
+  if (typeof code !== 'string') {
+    return false;
+  }
+  return code === 'EROFS' || code === 'EACCES' || code === 'EPERM';
+};
+
 class FileScenarioStore implements ScenarioStore {
   private readonly filePath: string;
   private readonly ready: Promise<void>;
   private scenarios: ScenarioRecord[] = [];
+  private persistenceDisabled = false;
+  private warnedAboutPersistence = false;
 
   constructor(filePath?: string) {
     this.filePath = filePath ?? path.join(process.cwd(), 'data', 'scenarios.json');
     this.ready = this.initialize();
   }
 
+  private disablePersistence(message: string, error?: unknown): void {
+    this.persistenceDisabled = true;
+    if (this.warnedAboutPersistence) {
+      return;
+    }
+    const detail = error instanceof Error ? ` (${error.message})` : '';
+    console.warn(`${message}${detail}. Scenarios will be stored in memory only.`);
+    this.warnedAboutPersistence = true;
+  }
+
   private async initialize(): Promise<void> {
-    await fs.mkdir(path.dirname(this.filePath), { recursive: true });
+    try {
+      await fs.mkdir(path.dirname(this.filePath), { recursive: true });
+    } catch (error) {
+      if (isReadOnlyFsError(error)) {
+        this.disablePersistence('Scenario file storage is read-only', error);
+      } else {
+        throw error;
+      }
+    }
     try {
       const raw = await fs.readFile(this.filePath, 'utf8');
       const data = JSON.parse(raw);
@@ -45,7 +76,22 @@ class FileScenarioStore implements ScenarioStore {
     } catch (error) {
       const nodeError = error as NodeJS.ErrnoException;
       if (nodeError.code === 'ENOENT') {
-        await fs.writeFile(this.filePath, '[]\n', 'utf8');
+        if (!this.persistenceDisabled) {
+          try {
+            await fs.writeFile(this.filePath, '[]\n', 'utf8');
+          } catch (writeError) {
+            if (isReadOnlyFsError(writeError)) {
+              this.disablePersistence('Scenario file cannot be created', writeError);
+            } else {
+              throw writeError;
+            }
+          }
+        } else {
+          this.scenarios = [];
+        }
+      } else if (isReadOnlyFsError(nodeError)) {
+        this.disablePersistence('Scenario file cannot be read', nodeError);
+        this.scenarios = [];
       } else {
         console.error('Failed to read scenario store:', error);
         this.scenarios = [];
@@ -58,7 +104,18 @@ class FileScenarioStore implements ScenarioStore {
   }
 
   private async persist(): Promise<void> {
-    await fs.writeFile(this.filePath, JSON.stringify(this.scenarios, null, 2));
+    if (this.persistenceDisabled) {
+      return;
+    }
+    try {
+      await fs.writeFile(this.filePath, JSON.stringify(this.scenarios, null, 2));
+    } catch (error) {
+      if (isReadOnlyFsError(error)) {
+        this.disablePersistence('Scenario file storage became read-only', error);
+        return;
+      }
+      throw error;
+    }
   }
 
   async list(): Promise<ScenarioRecord[]> {
