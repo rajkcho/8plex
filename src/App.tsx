@@ -505,6 +505,9 @@ function App() {
   const [newExpenseValue, setNewExpenseValue] = useState('');
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
 
+  const brokerFeeSliderMax = Math.max(assumptions.brokerFee || 0, 250_000);
+  const contingencySliderMax = Math.max((assumptions.contingencyPct ?? 0) * 100, 20);
+
   const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
   const { waterfallData, waterfallDomain } = useMemo(() => {
     const data: CashFlowBar[] = [
@@ -1179,15 +1182,25 @@ function App() {
           </div>
           <div className="input-control">
             <label htmlFor="brokerFee">Broker Fee</label>
-            <div className="currency-input">
-              <span className="prefix">$</span>
+            <div className="input-row">
               <input
                 id="brokerFee"
-                type="text"
-                inputMode="numeric"
-                value={formatCurrencyInputValue(assumptions.brokerFee)}
-                onChange={(event) => handleBrokerFeeChange(parseCurrencyInputValue(event.target.value))}
+                type="range"
+                min={0}
+                max={brokerFeeSliderMax}
+                step={500}
+                value={assumptions.brokerFee}
+                onChange={(event) => handleBrokerFeeChange(Number(event.target.value))}
               />
+              <div className="currency-input">
+                <span className="prefix">$</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={formatCurrencyInputValue(assumptions.brokerFee)}
+                  onChange={(event) => handleBrokerFeeChange(parseCurrencyInputValue(event.target.value))}
+                />
+              </div>
             </div>
           </div>
           <div className="input-control">
@@ -1214,17 +1227,27 @@ function App() {
           </div>
           <div className="input-control">
             <label htmlFor="contingencyPct">Contingency</label>
-            <div className="percent-input">
+            <div className="input-row">
               <input
                 id="contingencyPct"
-                type="number"
+                type="range"
                 min={0}
-                max={100}
-                step={0.1}
+                max={contingencySliderMax}
+                step={0.25}
                 value={(assumptions.contingencyPct ?? 0) * 100}
                 onChange={(event) => handleContingencyChange(Number(event.target.value))}
               />
-              <span className="suffix">%</span>
+              <div className="percent-input">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={(assumptions.contingencyPct ?? 0) * 100}
+                  onChange={(event) => handleContingencyChange(Number(event.target.value))}
+                />
+                <span className="suffix">%</span>
+              </div>
             </div>
           </div>
           <div className="input-stack">
