@@ -1746,7 +1746,8 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                 {waterfallData.map((entry) => (
                   <Cell key={entry.name} fill={entry.isTotal ? '#16a34a' : entry.color} />
                 ))}
-                <LabelList dataKey="value" content={<WaterfallLabel />} />
+                <LabelList dataKey="value" position="top" formatter={(value) => (typeof value === 'number' && value > 0 ? currencyFormatter.format(value) : '')} />
+                <LabelList dataKey="value" position="insideBottom" formatter={(value) => (typeof value === 'number' && value <= 0 ? currencyFormatter.format(value) : '')} fill="#fff" />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
