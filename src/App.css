@@ -96,6 +96,8 @@
 
 .sensitivity-panel {
   gap: 1rem;
+  padding-top: 1.5rem;
+  margin-top: 2rem;
 }
 
 .sensitivity-header {
@@ -150,12 +152,12 @@
 .sensitivity-card {
   border: 1px solid #e2e8f0;
   border-radius: 1rem;
-  padding: 1rem;
+  padding: 0.75rem;
   background: #fff;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  min-height: 240px;
+  gap: 0.5rem;
+  min-height: 220px;
 }
 
 .sensitivity-card h3 {
@@ -170,15 +172,16 @@
 .sensitivity-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  table-layout: fixed;
 }
 
 .sensitivity-table th,
 .sensitivity-table td {
   border: 1px solid #e2e8f0;
-  padding: 0.4rem 0.6rem;
+  padding: 0.3rem 0.45rem;
   text-align: center;
-  min-width: 90px;
+  min-width: 70px;
 }
 
 .sensitivity-table th {
