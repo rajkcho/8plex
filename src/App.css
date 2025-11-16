@@ -345,7 +345,8 @@
 .vacancy-summary-wrapper {
   width: 100%;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
+  padding-bottom: 0.5rem;
 }
 
 .vacancy-summary-label {
