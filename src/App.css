@@ -322,24 +322,15 @@
 
 .vacancy-summary {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 1rem;
-  padding: 0.5rem 0.85rem;
+  padding: 0.85rem 1.1rem;
   background: #f8fafc;
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  width: 75%;
-  max-width: 780px;
-  min-width: 360px;
-  max-height: 70px;
-  min-height: 55px;
 }
 
 .vacancy-summary-wrapper {
@@ -349,14 +340,8 @@
   padding-bottom: 0.5rem;
 }
 
-.vacancy-summary-label {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #64748b;
-}
-
 .vacancy-summary-value {
-  margin: 0.15rem 0 0;
+  margin: 0;
   font-size: 1.4rem;
   font-weight: 700;
   color: #0f172a;
@@ -370,12 +355,6 @@
   color: #475569;
 }
 
-.vacancy-summary-city {
-  margin: 0;
-  font-weight: 600;
-  color: #312e81;
-}
-
 .vacancy-summary.has-photo {
   color: #f8fafc;
   border-color: rgba(255, 255, 255, 0.35);
@@ -383,13 +362,11 @@
   padding-bottom: 2.2rem;
 }
 
-.vacancy-summary.has-photo .vacancy-summary-label,
 .vacancy-summary.has-photo .vacancy-summary-value span {
   color: rgba(241, 245, 249, 0.92);
 }
 
-.vacancy-summary.has-photo .vacancy-summary-value,
-.vacancy-summary.has-photo .vacancy-summary-city {
+.vacancy-summary.has-photo .vacancy-summary-value {
   color: #f8fafc;
 }
 
@@ -1211,4 +1188,42 @@ input[type='number'] {
   .chart-card {
     padding: 1.25rem;
   }
+}
+
+.vacancy-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex: 1;
+}
+
+.vacancy-summary-location {
+  margin: 0;
+  font-weight: 600;
+  color: #312e81;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 1.05rem;
+}
+
+.vacancy-summary-location span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4338ca;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vacancy-summary-value {
+  text-align: right;
+}
+
+.vacancy-summary.has-photo .vacancy-summary-location {
+  color: #f8fafc;
+}
+
+.vacancy-summary.has-photo .vacancy-summary-location span {
+  color: rgba(241, 245, 249, 0.92);
 }

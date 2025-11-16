@@ -22,6 +22,7 @@ import {
 import type { TooltipProps, LabelProps } from 'recharts';
 import rentsCsv from '../rentsv2.csv?raw';
 import cmhcCmaList from './assets/cmhc-cmas.json';
+import vacancyFallbackImage from './assets/vacancy-fallback.jpg';
 
 const baselineAssumptions = loadBaselineAssumptions();
 const baselineMetrics = calculateMetrics(baselineAssumptions);
@@ -129,11 +130,10 @@ type VacancyCityPhoto = {
 };
 
 const fallbackVacancyPhoto: VacancyCityPhoto = {
-  imageUrl:
-    'https://images.pexels.com/photos/1486347/pexels-photo-1486347.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080',
-  photographer: 'Andre Furtado',
-  photographerUrl: 'https://www.pexels.com/@andre-furtado-43594',
-  sourceUrl: 'https://www.pexels.com/photo/cn-tower-with-fireworks-1486347/',
+  imageUrl: vacancyFallbackImage,
+  photographer: 'Pixabay',
+  photographerUrl: 'https://www.pexels.com/@pixabay',
+  sourceUrl: 'https://www.pexels.com/photo/architecture-bay-bridge-buildings-417173/',
   altText: 'City skyline at dusk',
 };
 
@@ -642,7 +642,6 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
     backgroundRepeat: 'no-repeat',
   };
 }, [vacancySummaryPhoto]);
-const vacancySummaryClassName = vacancySummaryPhoto ? 'vacancy-summary has-photo' : 'vacancy-summary';
   const maggiMetadata = useMemo(() => {
     const resolvedLocation = selectedVacancyCity?.name ?? currentMarketRentCity ?? null;
     return {
@@ -1925,27 +1924,29 @@ const vacancySummaryClassName = vacancySummaryPhoto ? 'vacancy-summary has-photo
             </div>
             {latestVacancyPoint && selectedVacancyCity ? (
               <div className="vacancy-summary-wrapper">
-                <div className={vacancySummaryClassName} style={vacancySummaryStyle}>
-                <div>
-                  <p className="vacancy-summary-label">Latest reading</p>
-                  <p className="vacancy-summary-value">
-                    {formatVacancyRate(latestVacancyPoint.vacancyRate)}
-                    <span>{latestVacancyPoint.displayLabel}</span>
-                  </p>
-                </div>
-                <p className="vacancy-summary-city">{selectedVacancyCity.name}</p>
-                {vacancySummaryPhoto?.photographer ? (
-                  <p className="vacancy-photo-credit">
-                    Photo: {vacancySummaryPhoto.photographer} /{' '}
-                    {vacancySummaryPhoto.photographerUrl ? (
-                      <a href={vacancySummaryPhoto.photographerUrl} target="_blank" rel="noreferrer">
-                        Pexels
-                      </a>
-                    ) : (
-                      'Pexels'
-                    )}
-                  </p>
-                ) : null}
+                <div className="vacancy-summary has-photo" style={vacancySummaryStyle}>
+                  <div className="vacancy-summary-header">
+                    <p className="vacancy-summary-location">
+                      {selectedVacancyCity.name}
+                      <span>Latest</span>
+                    </p>
+                    <p className="vacancy-summary-value">
+                      {formatVacancyRate(latestVacancyPoint.vacancyRate)}
+                      <span>{latestVacancyPoint.displayLabel}</span>
+                    </p>
+                  </div>
+                  {vacancySummaryPhoto?.photographer ? (
+                    <p className="vacancy-photo-credit">
+                      Photo: {vacancySummaryPhoto.photographer} /{' '}
+                      {vacancySummaryPhoto.photographerUrl ? (
+                        <a href={vacancySummaryPhoto.photographerUrl} target="_blank" rel="noreferrer">
+                          Pexels
+                        </a>
+                      ) : (
+                        'Pexels'
+                      )}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}

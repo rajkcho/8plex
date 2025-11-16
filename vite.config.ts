@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: '/8plex/',
+  build: {
+    outDir: 'docs',
+  },
   server: {
     proxy: {
       '/api': {
