@@ -792,6 +792,8 @@ input[type='number'] {
   color: #fff;
   box-shadow: 0 12px 24px rgba(2, 6, 23, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: #000080;
+  background-image: none;
 }
 
 .cap-stack-metric-card .metric-label,
