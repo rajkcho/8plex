@@ -746,11 +746,13 @@ input[type='number'] {
 }
 
 .capital-stack-metrics-column {
-  flex: 0 0 270px;
+  flex: 0 0 283.5px;
+  max-width: 283.5px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   margin-left: 1.5rem;
+  align-self: flex-start;
 }
 
 .capital-stack-panel .input-row {
@@ -779,29 +781,6 @@ input[type='number'] {
   align-items: stretch;
 }
 
-.cap-stack-metric-card {
-  background: #000080;
-  border-radius: 1rem;
-  height: 110px;
-  width: 100%;
-  padding: 1.1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.35rem;
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background-color: #000080;
-  background-image: none;
-}
-
-.cap-stack-metric-card .metric-label,
-.cap-stack-metric-card .metric-value,
-.cap-stack-metric-card .metric-subtitle {
-  color: #fff;
-}
-
 .assumption-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -817,6 +796,25 @@ input[type='number'] {
   gap: 0.25rem;
   box-shadow: 0 15px 30px rgba(15, 23, 42, 0.08);
   position: relative;
+}
+
+.metric-card.cap-stack-metric-card {
+  height: 110px;
+  width: 100%;
+  padding: 1.1rem;
+  justify-content: center;
+  gap: 0.35rem;
+  background-color: #000080;
+  background-image: none;
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.metric-card.cap-stack-metric-card .metric-label,
+.metric-card.cap-stack-metric-card .metric-value,
+.metric-card.cap-stack-metric-card .metric-subtitle {
+  color: #fff;
 }
 
 .metric-card-header {
