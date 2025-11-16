@@ -632,7 +632,7 @@
 }
 
 .input-row > input[type='number'] {
-  flex: 0 0 120px;
+  flex: 0 0 126px;
   padding: 0.5rem 0.75rem;
   border-radius: 0.6rem;
   border: 1px solid #c7d7f7;
@@ -751,7 +751,7 @@ input[type='number'] {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-left: 1.5rem;
+  margin-left: 2rem;
   align-self: flex-start;
 }
 
@@ -768,7 +768,7 @@ input[type='number'] {
 .capital-stack-panel .currency-input,
 .capital-stack-panel .percent-input,
 .capital-stack-panel .number-input {
-  max-width: 130px;
+  max-width: 136.5px;
 }
 
 .assumption-cards.vertical {
