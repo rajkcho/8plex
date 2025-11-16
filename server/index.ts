@@ -19,6 +19,8 @@ const defaultHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+type Season = 'October' | 'April';
+
 type VacancyPoint = {
   date: string;
   year: number;
@@ -31,12 +33,13 @@ type VacancyPoint = {
 
 type VacancyResponse = {
   metroCode: string;
-  season: 'October' | 'April';
+  seasons: Season[];
   retrievedAt: string;
   points: VacancyPoint[];
 };
 
 const vacancyCache = new Map<string, { expiresAt: number; payload: VacancyResponse }>();
+const DEFAULT_SEASONS: Season[] = ['October', 'April'];
 
 const sendJson = (res: http.ServerResponse, status: number, payload: unknown): void => {
   res.writeHead(status, { ...defaultHeaders, 'Content-Type': 'application/json' });
@@ -181,7 +184,7 @@ const parseVacancyCsv = (csv: string): VacancyPoint[] => {
   return points;
 };
 
-const fetchCmhcVacancyData = async (metroCode: string, season: 'October' | 'April'): Promise<VacancyResponse> => {
+const fetchSeasonSeries = async (metroCode: string, season: Season): Promise<VacancyPoint[]> => {
   const params = new URLSearchParams();
   params.set('TableId', '2.2.1');
   params.set('GeographyId', metroCode);
@@ -226,11 +229,32 @@ const fetchCmhcVacancyData = async (metroCode: string, season: 'October' | 'Apri
     request.end();
   });
 
+  return parseVacancyCsv(payload);
+};
+
+const fetchCmhcVacancyData = async (metroCode: string, seasons: Season[]): Promise<VacancyResponse> => {
+  const uniqueSeasons = Array.from(new Set(seasons));
+  const pointArrays = await Promise.all(uniqueSeasons.map((season) => fetchSeasonSeries(metroCode, season)));
+  const combinedPoints = pointArrays.flat().sort((a, b) => {
+    const aTime = new Date(a.date).getTime();
+    const bTime = new Date(b.date).getTime();
+    return aTime - bTime;
+  });
+  const deduped = combinedPoints.reduce<VacancyPoint[]>((acc, point) => {
+    if (!point.date) {
+      return acc;
+    }
+    const hasExisting = acc.some((existing) => existing.date === point.date && existing.season === point.season);
+    if (!hasExisting) {
+      acc.push(point);
+    }
+    return acc;
+  }, []);
   return {
     metroCode,
-    season,
+    seasons: uniqueSeasons,
     retrievedAt: new Date().toISOString(),
-    points: parseVacancyCsv(payload),
+    points: deduped,
   };
 };
 
@@ -255,16 +279,28 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 400, { message: 'metroCode query parameter is required' });
       return;
     }
-    const seasonParam = (url.searchParams.get('season') ?? '').toLowerCase();
-    const season: 'October' | 'April' = seasonParam === 'april' ? 'April' : 'October';
-    const cacheKey = `${metroCode}:${season}`;
+    const seasonParams = url.searchParams.getAll('season');
+    const parsedSeasons = seasonParams
+      .map((value) => value.trim().toLowerCase())
+      .map((value) => {
+        if (value === 'april') {
+          return 'April';
+        }
+        if (value === 'october') {
+          return 'October';
+        }
+        return null;
+      })
+      .filter((value): value is Season => value != null);
+    const seasons = parsedSeasons.length ? parsedSeasons : DEFAULT_SEASONS;
+    const cacheKey = `${metroCode}:${seasons.slice().sort().join(',')}`;
     const cached = vacancyCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       sendJson(res, 200, cached.payload);
       return;
     }
     try {
-      const payload = await fetchCmhcVacancyData(metroCode, season);
+      const payload = await fetchCmhcVacancyData(metroCode, seasons);
       vacancyCache.set(cacheKey, { expiresAt: Date.now() + VACANCY_CACHE_MS, payload });
       sendJson(res, 200, payload);
     } catch (error) {

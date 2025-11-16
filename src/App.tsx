@@ -19,7 +19,7 @@ import {
   Line,
 } from 'recharts';
 import type { TooltipProps, LabelProps } from 'recharts';
-import rentsCsv from '../rents.csv?raw';
+import rentsCsv from '../rentsv2.csv?raw';
 import cmhcCmaList from './assets/cmhc-cmas.json';
 
 const baselineAssumptions = loadBaselineAssumptions();
@@ -84,6 +84,7 @@ type MarketRentRow = {
   oneBedroom: number;
   twoBedroom: number;
   threeBedroom: number;
+  fourBedroom: number;
 };
 
 type CmhcCity = {
@@ -104,7 +105,7 @@ type VacancyApiPoint = {
 
 type VacancyApiResponse = {
   metroCode: string;
-  season: string;
+  seasons: string[];
   points: VacancyApiPoint[];
 };
 
@@ -145,7 +146,11 @@ const parseCsvLine = (line: string): string[] => {
 };
 
 const parseCurrencyValue = (value: string): number => {
-  const cleaned = value.replace(/[^\d.-]/g, '');
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'na' || trimmed === '-') {
+    return 0;
+  }
+  const cleaned = trimmed.replace(/[^\d.-]/g, '');
   const parsed = Number(cleaned || '0');
   return Number.isFinite(parsed) ? parsed : 0;
 };
@@ -165,15 +170,26 @@ const parseMarketRentCsv = (csv: string): MarketRentRow[] => {
   }
 
   const headerCells = parseCsvLine(lines[0]).map((cell) => cell.toLowerCase());
+  const findIndex = (candidates: string[]): number => {
+    for (const candidate of candidates) {
+      const idx = headerCells.findIndex((cell) => cell === candidate);
+      if (idx !== -1) {
+        return idx;
+      }
+    }
+    return -1;
+  };
   const columnIndexes = {
-    city: headerCells.findIndex((cell) => cell === 'city'),
-    bachelor: headerCells.findIndex((cell) => cell === 'bachelor'),
-    oneBedroom: headerCells.findIndex((cell) => cell === '1br'),
-    twoBedroom: headerCells.findIndex((cell) => cell === '2br'),
-    threeBedroom: headerCells.findIndex((cell) => cell === '3br'),
+    city: findIndex(['city', 'municipality', 'neighbourhood']),
+    bachelor: findIndex(['bachelor', 'bach', '0br']),
+    oneBedroom: findIndex(['1br', 'one bedroom', '1 bedroom']),
+    twoBedroom: findIndex(['2br', 'two bedroom', '2 bedroom']),
+    threeBedroom: findIndex(['3br', 'three bedroom', '3 bedroom']),
+    fourBedroom: findIndex(['4br', 'four bedroom', '4 bedroom']),
   };
 
-  if (Object.values(columnIndexes).some((value) => value === -1)) {
+  const requiredColumns: Array<keyof typeof columnIndexes> = ['city', 'bachelor', 'oneBedroom', 'twoBedroom', 'threeBedroom'];
+  if (requiredColumns.some((key) => columnIndexes[key] === -1)) {
     return [];
   }
 
@@ -190,6 +206,7 @@ const parseMarketRentCsv = (csv: string): MarketRentRow[] => {
       oneBedroom: parseCurrencyValue(cells[columnIndexes.oneBedroom] ?? ''),
       twoBedroom: parseCurrencyValue(cells[columnIndexes.twoBedroom] ?? ''),
       threeBedroom: parseCurrencyValue(cells[columnIndexes.threeBedroom] ?? ''),
+      fourBedroom: columnIndexes.fourBedroom === -1 ? 0 : parseCurrencyValue(cells[columnIndexes.fourBedroom] ?? ''),
     });
     return acc;
   }, []);
@@ -1375,7 +1392,7 @@ function App() {
               <>
                 <div className="market-rent-controls">
                   <label htmlFor="marketRentCity">
-                    Neighbourhood
+                    Municipality
                     <select
                       id="marketRentCity"
                       value={currentMarketRentCity}
@@ -1398,22 +1415,20 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <th scope="row">Bachelor</th>
-                        <td>{currencyFormatter.format(selectedMarketRentRow.bachelor)}</td>
-                      </tr>
-                      <tr>
-                        <th scope="row">1 Bedroom</th>
-                        <td>{currencyFormatter.format(selectedMarketRentRow.oneBedroom)}</td>
-                      </tr>
-                      <tr>
-                        <th scope="row">2 Bedroom</th>
-                        <td>{currencyFormatter.format(selectedMarketRentRow.twoBedroom)}</td>
-                      </tr>
-                      <tr>
-                        <th scope="row">3 Bedroom</th>
-                        <td>{currencyFormatter.format(selectedMarketRentRow.threeBedroom)}</td>
-                      </tr>
+                      {[
+                        { label: 'Bachelor', value: selectedMarketRentRow.bachelor },
+                        { label: '1 Bedroom', value: selectedMarketRentRow.oneBedroom },
+                        { label: '2 Bedroom', value: selectedMarketRentRow.twoBedroom },
+                        { label: '3 Bedroom', value: selectedMarketRentRow.threeBedroom },
+                        ...(selectedMarketRentRow.fourBedroom > 0
+                          ? [{ label: '4 Bedroom', value: selectedMarketRentRow.fourBedroom }]
+                          : []),
+                      ].map((row) => (
+                        <tr key={row.label}>
+                          <th scope="row">{row.label}</th>
+                          <td>{currencyFormatter.format(row.value)}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 ) : (
@@ -1425,7 +1440,7 @@ function App() {
               <div className="vacancy-controls">
                 <div className="vacancy-copy">
                   <p className="vacancy-title">City vacancy rates</p>
-                  <p className="vacancy-subtitle">Time series (last 5 years) · CMHC Rental Market Survey</p>
+                  <p className="vacancy-subtitle">Latest CMHC survey periods (highest available frequency)</p>
                 </div>
                 <label htmlFor="vacancyCitySelect">
                   City
