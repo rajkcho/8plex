@@ -773,7 +773,10 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, error.statusCode, { message: error.message });
       } else {
         console.error('Failed to load demographic data:', error);
-        sendJson(res, 502, { message: 'Unable to load demographic data' });
+        sendJson(res, 502, {
+          message: 'Unable to load demographic data',
+          detail: error instanceof Error ? error.message : undefined,
+        });
       }
     }
     return;
