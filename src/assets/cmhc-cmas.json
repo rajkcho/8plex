@@ -1,0 +1,767 @@
+[
+  {
+    "name": "Abbotsford - Mission",
+    "cmaUid": "59932",
+    "geographyId": "0110"
+  },
+  {
+    "name": "Alma",
+    "cmaUid": "24410",
+    "geographyId": "7035"
+  },
+  {
+    "name": "Amos V",
+    "cmaUid": "24481",
+    "geographyId": "7040"
+  },
+  {
+    "name": "Baie-Comeau",
+    "cmaUid": "24406",
+    "geographyId": "7045"
+  },
+  {
+    "name": "Barrie",
+    "cmaUid": "35568",
+    "geographyId": "0120"
+  },
+  {
+    "name": "Bathurst",
+    "cmaUid": "13328",
+    "geographyId": "7075"
+  },
+  {
+    "name": "Belleville - Quinte West",
+    "cmaUid": "35522",
+    "geographyId": "0122"
+  },
+  {
+    "name": "Brandon",
+    "cmaUid": "46610",
+    "geographyId": "3275"
+  },
+  {
+    "name": "Brantford",
+    "cmaUid": "35543",
+    "geographyId": "0125"
+  },
+  {
+    "name": "Brockville",
+    "cmaUid": "35512",
+    "geographyId": "7090"
+  },
+  {
+    "name": "Brooks",
+    "cmaUid": "48806",
+    "geographyId": "7095"
+  },
+  {
+    "name": "Calgary",
+    "cmaUid": "48825",
+    "geographyId": "0140"
+  },
+  {
+    "name": "Campbell River",
+    "cmaUid": "59944",
+    "geographyId": "7100"
+  },
+  {
+    "name": "Campbellton",
+    "cmaUid": "13330",
+    "geographyId": "7120"
+  },
+  {
+    "name": "Camrose",
+    "cmaUid": "48833",
+    "geographyId": "7123"
+  },
+  {
+    "name": "Canmore",
+    "cmaUid": "48828",
+    "geographyId": "7124"
+  },
+  {
+    "name": "Cape Breton",
+    "cmaUid": "12225",
+    "geographyId": "5560"
+  },
+  {
+    "name": "Centre Wellington",
+    "cmaUid": "35531",
+    "geographyId": "7127"
+  },
+  {
+    "name": "Charlottetown",
+    "cmaUid": "11105",
+    "geographyId": "3300"
+  },
+  {
+    "name": "Chatham-Kent",
+    "cmaUid": "35556",
+    "geographyId": "3320"
+  },
+  {
+    "name": "Chilliwack",
+    "cmaUid": "59930",
+    "geographyId": "0210"
+  },
+  {
+    "name": "Cobourg",
+    "cmaUid": "35527",
+    "geographyId": "7165"
+  },
+  {
+    "name": "Collingwood",
+    "cmaUid": "35567",
+    "geographyId": "7170"
+  },
+  {
+    "name": "Corner Brook",
+    "cmaUid": "10015",
+    "geographyId": "7175"
+  },
+  {
+    "name": "Cornwall",
+    "cmaUid": "35501",
+    "geographyId": "3420"
+  },
+  {
+    "name": "Courtenay",
+    "cmaUid": "59943",
+    "geographyId": "3460"
+  },
+  {
+    "name": "Cowansville",
+    "cmaUid": "24437",
+    "geographyId": "7183"
+  },
+  {
+    "name": "Cranbrook",
+    "cmaUid": "59905",
+    "geographyId": "7185"
+  },
+  {
+    "name": "Dawson Creek",
+    "cmaUid": "59975",
+    "geographyId": "7190"
+  },
+  {
+    "name": "Dolbeau-Mistassini",
+    "cmaUid": "24411",
+    "geographyId": "7195"
+  },
+  {
+    "name": "Drummondville",
+    "cmaUid": "24447",
+    "geographyId": "0280"
+  },
+  {
+    "name": "Duncan",
+    "cmaUid": "59937",
+    "geographyId": "7225"
+  },
+  {
+    "name": "Edmonton",
+    "cmaUid": "48835",
+    "geographyId": "0340"
+  },
+  {
+    "name": "Edmundston",
+    "cmaUid": "13335",
+    "geographyId": "7240"
+  },
+  {
+    "name": "Elliot Lake",
+    "cmaUid": "35582",
+    "geographyId": "7245"
+  },
+  {
+    "name": "Essa",
+    "cmaUid": "35563",
+    "geographyId": "7250"
+  },
+  {
+    "name": "Estevan",
+    "cmaUid": "47750",
+    "geographyId": "7253"
+  },
+  {
+    "name": "Fort St. John",
+    "cmaUid": "59977",
+    "geographyId": "7265"
+  },
+  {
+    "name": "Fredericton",
+    "cmaUid": "13320",
+    "geographyId": "0370"
+  },
+  {
+    "name": "Gander",
+    "cmaUid": "10011",
+    "geographyId": "7280"
+  },
+  {
+    "name": "Gatineau",
+    "cmaUid": "24505",
+    "geographyId": "1264"
+  },
+  {
+    "name": "Granby",
+    "cmaUid": "24450",
+    "geographyId": "3800"
+  },
+  {
+    "name": "Grand Falls-Windsor",
+    "cmaUid": "10010",
+    "geographyId": "7300"
+  },
+  {
+    "name": "Grande Prairie",
+    "cmaUid": "48850",
+    "geographyId": "3920"
+  },
+  {
+    "name": "Greater Sudbury / Grand Sudbury",
+    "cmaUid": "35580",
+    "geographyId": "2000"
+  },
+  {
+    "name": "Guelph",
+    "cmaUid": "35550",
+    "geographyId": "0460"
+  },
+  {
+    "name": "Halifax",
+    "cmaUid": "12205",
+    "geographyId": "0580"
+  },
+  {
+    "name": "Hamilton",
+    "cmaUid": "35537",
+    "geographyId": "0610"
+  },
+  {
+    "name": "Hawkesbury",
+    "cmaUid": "35502",
+    "geographyId": "7330"
+  },
+  {
+    "name": "High River",
+    "cmaUid": "48821",
+    "geographyId": "7331"
+  },
+  {
+    "name": "Ingersoll",
+    "cmaUid": "35533",
+    "geographyId": "7333"
+  },
+  {
+    "name": "Joliette",
+    "cmaUid": "24456",
+    "geographyId": "4150"
+  },
+  {
+    "name": "Kamloops",
+    "cmaUid": "59925",
+    "geographyId": "0650"
+  },
+  {
+    "name": "Kawartha Lakes",
+    "cmaUid": "35530",
+    "geographyId": "4230"
+  },
+  {
+    "name": "Kelowna",
+    "cmaUid": "59915",
+    "geographyId": "0670"
+  },
+  {
+    "name": "Kenora",
+    "cmaUid": "35598",
+    "geographyId": "7360"
+  },
+  {
+    "name": "Kentville",
+    "cmaUid": "12210",
+    "geographyId": "7375"
+  },
+  {
+    "name": "Kingston",
+    "cmaUid": "35521",
+    "geographyId": "0700"
+  },
+  {
+    "name": "Kitchener - Cambridge - Waterloo",
+    "cmaUid": "35541",
+    "geographyId": "0850"
+  },
+  {
+    "name": "Lachute",
+    "cmaUid": "24468",
+    "geographyId": "7420"
+  },
+  {
+    "name": "Lacombe",
+    "cmaUid": "48832",
+    "geographyId": "7422"
+  },
+  {
+    "name": "Ladysmith",
+    "cmaUid": "59936",
+    "geographyId": "7423"
+  },
+  {
+    "name": "Lethbridge",
+    "cmaUid": "48810",
+    "geographyId": "0870"
+  },
+  {
+    "name": "Lloydminster",
+    "cmaUid": "48840",
+    "geographyId": "7433"
+  },
+  {
+    "name": "London",
+    "cmaUid": "35555",
+    "geographyId": "0950"
+  },
+  {
+    "name": "Matane",
+    "cmaUid": "24403",
+    "geographyId": "7440"
+  },
+  {
+    "name": "Medicine Hat",
+    "cmaUid": "48805",
+    "geographyId": "4390"
+  },
+  {
+    "name": "Midland",
+    "cmaUid": "35571",
+    "geographyId": "7465"
+  },
+  {
+    "name": "Miramichi",
+    "cmaUid": "13329",
+    "geographyId": "7467"
+  },
+  {
+    "name": "Moncton",
+    "cmaUid": "13305",
+    "geographyId": "1040"
+  },
+  {
+    "name": "Montr\u00e9al",
+    "cmaUid": "24462",
+    "geographyId": "1060"
+  },
+  {
+    "name": "Moose Jaw",
+    "cmaUid": "47715",
+    "geographyId": "7480"
+  },
+  {
+    "name": "Nanaimo",
+    "cmaUid": "59938",
+    "geographyId": "1100"
+  },
+  {
+    "name": "Nelson",
+    "cmaUid": "59907",
+    "geographyId": "7496"
+  },
+  {
+    "name": "New Glasgow",
+    "cmaUid": "12220",
+    "geographyId": "7510"
+  },
+  {
+    "name": "Norfolk",
+    "cmaUid": "35547",
+    "geographyId": "4490"
+  },
+  {
+    "name": "North Battleford",
+    "cmaUid": "47735",
+    "geographyId": "7525"
+  },
+  {
+    "name": "North Bay",
+    "cmaUid": "35575",
+    "geographyId": "4510"
+  },
+  {
+    "name": "Okotoks",
+    "cmaUid": "48820",
+    "geographyId": "7527"
+  },
+  {
+    "name": "Orillia",
+    "cmaUid": "35569",
+    "geographyId": "7529"
+  },
+  {
+    "name": "Oshawa",
+    "cmaUid": "35532",
+    "geographyId": "1250"
+  },
+  {
+    "name": "Ottawa",
+    "cmaUid": "35505",
+    "geographyId": "1265"
+  },
+  {
+    "name": "Owen Sound",
+    "cmaUid": "35566",
+    "geographyId": "7537"
+  },
+  {
+    "name": "Parksville",
+    "cmaUid": "59939",
+    "geographyId": "7539"
+  },
+  {
+    "name": "Pembroke",
+    "cmaUid": "35515",
+    "geographyId": "7540"
+  },
+  {
+    "name": "Penticton",
+    "cmaUid": "59913",
+    "geographyId": "7550"
+  },
+  {
+    "name": "Petawawa",
+    "cmaUid": "35516",
+    "geographyId": "7555"
+  },
+  {
+    "name": "Peterborough",
+    "cmaUid": "35529",
+    "geographyId": "1320"
+  },
+  {
+    "name": "Port Alberni",
+    "cmaUid": "59940",
+    "geographyId": "7570"
+  },
+  {
+    "name": "Port Hope",
+    "cmaUid": "35528",
+    "geographyId": "7572"
+  },
+  {
+    "name": "Portage la Prairie",
+    "cmaUid": "46607",
+    "geographyId": "7560"
+  },
+  {
+    "name": "Powell River",
+    "cmaUid": "59945",
+    "geographyId": "7574"
+  },
+  {
+    "name": "Prince Albert",
+    "cmaUid": "47745",
+    "geographyId": "7579"
+  },
+  {
+    "name": "Prince George",
+    "cmaUid": "59970",
+    "geographyId": "4900"
+  },
+  {
+    "name": "Prince Rupert",
+    "cmaUid": "59955",
+    "geographyId": "7581"
+  },
+  {
+    "name": "Quesnel",
+    "cmaUid": "59952",
+    "geographyId": "7583"
+  },
+  {
+    "name": "Qu\u00e9bec",
+    "cmaUid": "24421",
+    "geographyId": "1400"
+  },
+  {
+    "name": "Red Deer",
+    "cmaUid": "48830",
+    "geographyId": "1420"
+  },
+  {
+    "name": "Regina",
+    "cmaUid": "47705",
+    "geographyId": "1490"
+  },
+  {
+    "name": "Rimouski",
+    "cmaUid": "24404",
+    "geographyId": "4970"
+  },
+  {
+    "name": "Rivi\u00e8re-du-Loup",
+    "cmaUid": "24405",
+    "geographyId": "7590"
+  },
+  {
+    "name": "Rouyn-Noranda",
+    "cmaUid": "24485",
+    "geographyId": "7600"
+  },
+  {
+    "name": "Saguenay",
+    "cmaUid": "24408",
+    "geographyId": "0180"
+  },
+  {
+    "name": "Saint John",
+    "cmaUid": "13310",
+    "geographyId": "1600"
+  },
+  {
+    "name": "Saint-Georges",
+    "cmaUid": "24428",
+    "geographyId": "7615"
+  },
+  {
+    "name": "Saint-Hyacinthe",
+    "cmaUid": "24452",
+    "geographyId": "5000"
+  },
+  {
+    "name": "Sainte-Agathe-des-Monts",
+    "cmaUid": "24467",
+    "geographyId": "7608"
+  },
+  {
+    "name": "Sainte-Marie",
+    "cmaUid": "24423",
+    "geographyId": "7616"
+  },
+  {
+    "name": "Salaberry-de-Valleyfield",
+    "cmaUid": "24465",
+    "geographyId": "7795"
+  },
+  {
+    "name": "Salmon Arm",
+    "cmaUid": "59920",
+    "geographyId": "7617"
+  },
+  {
+    "name": "Sarnia",
+    "cmaUid": "35562",
+    "geographyId": "5250"
+  },
+  {
+    "name": "Saskatoon",
+    "cmaUid": "47725",
+    "geographyId": "1700"
+  },
+  {
+    "name": "Sault Ste. Marie",
+    "cmaUid": "35590",
+    "geographyId": "5280"
+  },
+  {
+    "name": "Sept-\u00celes",
+    "cmaUid": "24412",
+    "geographyId": "7650"
+  },
+  {
+    "name": "Shawinigan",
+    "cmaUid": "24444",
+    "geographyId": "5400"
+  },
+  {
+    "name": "Sherbrooke",
+    "cmaUid": "24433",
+    "geographyId": "1800"
+  },
+  {
+    "name": "Sorel-Tracy",
+    "cmaUid": "24454",
+    "geographyId": "7675"
+  },
+  {
+    "name": "Squamish",
+    "cmaUid": "59934",
+    "geographyId": "7680"
+  },
+  {
+    "name": "St. Catharines - Niagara",
+    "cmaUid": "35539",
+    "geographyId": "1160"
+  },
+  {
+    "name": "St. John's",
+    "cmaUid": "10001",
+    "geographyId": "1640"
+  },
+  {
+    "name": "Steinbach",
+    "cmaUid": "46605",
+    "geographyId": "7683"
+  },
+  {
+    "name": "Stratford",
+    "cmaUid": "35553",
+    "geographyId": "7685"
+  },
+  {
+    "name": "Strathmore",
+    "cmaUid": "48826",
+    "geographyId": "7688"
+  },
+  {
+    "name": "Summerside",
+    "cmaUid": "11110",
+    "geographyId": "7690"
+  },
+  {
+    "name": "Swift Current",
+    "cmaUid": "47720",
+    "geographyId": "7700"
+  },
+  {
+    "name": "Sylvan Lake",
+    "cmaUid": "48831",
+    "geographyId": "7702"
+  },
+  {
+    "name": "Terrace",
+    "cmaUid": "59965",
+    "geographyId": "7705"
+  },
+  {
+    "name": "Thetford Mines",
+    "cmaUid": "24430",
+    "geographyId": "7720"
+  },
+  {
+    "name": "Thompson",
+    "cmaUid": "46640",
+    "geographyId": "7730"
+  },
+  {
+    "name": "Thunder Bay",
+    "cmaUid": "35595",
+    "geographyId": "2240"
+  },
+  {
+    "name": "Tillsonburg",
+    "cmaUid": "35546",
+    "geographyId": "7733"
+  },
+  {
+    "name": "Timmins",
+    "cmaUid": "35586",
+    "geographyId": "7734"
+  },
+  {
+    "name": "Toronto",
+    "cmaUid": "35535",
+    "geographyId": "2270"
+  },
+  {
+    "name": "Trail",
+    "cmaUid": "59910",
+    "geographyId": "7735"
+  },
+  {
+    "name": "Trois-Rivi\u00e8res",
+    "cmaUid": "24442",
+    "geographyId": "2320"
+  },
+  {
+    "name": "Truro",
+    "cmaUid": "12215",
+    "geographyId": "7765"
+  },
+  {
+    "name": "Val-d'Or",
+    "cmaUid": "24480",
+    "geographyId": "7780"
+  },
+  {
+    "name": "Vancouver",
+    "cmaUid": "59933",
+    "geographyId": "2410"
+  },
+  {
+    "name": "Vernon",
+    "cmaUid": "59918",
+    "geographyId": "5700"
+  },
+  {
+    "name": "Victoria",
+    "cmaUid": "59935",
+    "geographyId": "2440"
+  },
+  {
+    "name": "Victoriaville",
+    "cmaUid": "24440",
+    "geographyId": "5720"
+  },
+  {
+    "name": "Wasaga Beach",
+    "cmaUid": "35565",
+    "geographyId": "7836"
+  },
+  {
+    "name": "Wetaskiwin",
+    "cmaUid": "48865",
+    "geographyId": "7838"
+  },
+  {
+    "name": "Weyburn",
+    "cmaUid": "47755",
+    "geographyId": "7839"
+  },
+  {
+    "name": "Whitehorse",
+    "cmaUid": "60990",
+    "geographyId": "7840"
+  },
+  {
+    "name": "Williams Lake",
+    "cmaUid": "59950",
+    "geographyId": "7845"
+  },
+  {
+    "name": "Windsor",
+    "cmaUid": "35559",
+    "geographyId": "2640"
+  },
+  {
+    "name": "Winkler",
+    "cmaUid": "46603",
+    "geographyId": "7847"
+  },
+  {
+    "name": "Winnipeg",
+    "cmaUid": "46602",
+    "geographyId": "2680"
+  },
+  {
+    "name": "Wood Buffalo",
+    "cmaUid": "48860",
+    "geographyId": "5800"
+  },
+  {
+    "name": "Woodstock",
+    "cmaUid": "35544",
+    "geographyId": "7855"
+  },
+  {
+    "name": "Yellowknife",
+    "cmaUid": "61995",
+    "geographyId": "7860"
+  },
+  {
+    "name": "Yorkton",
+    "cmaUid": "47710",
+    "geographyId": "7865"
+  }
+]

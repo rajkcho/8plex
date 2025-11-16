@@ -15,9 +15,12 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  LineChart,
+  Line,
 } from 'recharts';
 import type { TooltipProps, LabelProps } from 'recharts';
 import rentsCsv from '../rents.csv?raw';
+import cmhcCmaList from './assets/cmhc-cmas.json';
 
 const baselineAssumptions = loadBaselineAssumptions();
 const baselineMetrics = calculateMetrics(baselineAssumptions);
@@ -36,6 +39,13 @@ const percentFormatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
+
+const vacancyNumberFormatter = new Intl.NumberFormat('en-CA', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+const formatVacancyRate = (value: number): string => `${vacancyNumberFormatter.format(value)}%`;
 
 const formatCurrencyInputValue = (value?: number | null): string => {
   if (value == null || Number.isNaN(value)) {
@@ -74,6 +84,37 @@ type MarketRentRow = {
   oneBedroom: number;
   twoBedroom: number;
   threeBedroom: number;
+};
+
+type CmhcCity = {
+  name: string;
+  cmaUid: string;
+  geographyId: string;
+};
+
+type VacancyApiPoint = {
+  date: string;
+  year: number;
+  quarter: number;
+  season: string;
+  label: string;
+  rate: number;
+  quality?: string | null;
+};
+
+type VacancyApiResponse = {
+  metroCode: string;
+  season: string;
+  points: VacancyApiPoint[];
+};
+
+type VacancyChartDatum = {
+  isoDate: string;
+  displayLabel: string;
+  label: string;
+  vacancyRate: number;
+  season: string;
+  quality: string | null;
 };
 
 const parseCsvLine = (line: string): string[] => {
@@ -155,6 +196,14 @@ const parseMarketRentCsv = (csv: string): MarketRentRow[] => {
 };
 
 const marketRentData = parseMarketRentCsv(rentsCsv);
+
+const cmhcCities: CmhcCity[] = Array.isArray(cmhcCmaList)
+  ? (cmhcCmaList as CmhcCity[]).filter(
+      (entry): entry is CmhcCity => typeof entry?.name === 'string' && typeof entry?.geographyId === 'string',
+    )
+  : [];
+
+const defaultVacancyCity = cmhcCities.find((city) => city.name.toLowerCase() === 'vancouver') ?? cmhcCities[0] ?? null;
 
 const computeGrossRentAnnual = (assumptions: Assumptions): number => {
   const unitMix = assumptions.unitMix ?? [];
@@ -399,6 +448,26 @@ const ScenarioComparisonTooltip = ({ active, payload }: ScenarioComparisonToolti
   );
 };
 
+type VacancyTooltipProps = TooltipProps<number, string> & {
+  payload?: Array<{ payload: VacancyChartDatum }>;
+};
+
+const VacancyTooltip = ({ active, payload }: VacancyTooltipProps) => {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const item = payload[0].payload as VacancyChartDatum;
+
+  return (
+    <div className="chart-tooltip">
+      <strong>{item.label || item.displayLabel}</strong>
+      <span>Vacancy Rate: {formatVacancyRate(item.vacancyRate)}</span>
+      {item.quality ? <span>Quality: {item.quality}</span> : null}
+    </div>
+  );
+};
+
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
   const [percentExpenseValues, setPercentExpenseValues] = useState<Record<string, number>>(() =>
@@ -411,6 +480,10 @@ function App() {
   const [scenarioError, setScenarioError] = useState<string | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const [selectedMarketCity, setSelectedMarketCity] = useState<string>(marketRentData[0]?.city ?? '');
+  const [selectedVacancyMetro, setSelectedVacancyMetro] = useState<string>(defaultVacancyCity?.geographyId ?? '');
+  const [vacancySeriesByMetro, setVacancySeriesByMetro] = useState<Record<string, VacancyApiPoint[]>>({});
+  const [vacancyLoading, setVacancyLoading] = useState(false);
+  const [vacancyError, setVacancyError] = useState<string | null>(null);
   const [newExpenseLabel, setNewExpenseLabel] = useState('');
   const [newExpenseValue, setNewExpenseValue] = useState('');
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
@@ -456,6 +529,40 @@ function App() {
   }, [scenarios]);
   const currentMarketRentCity = selectedMarketCity || marketRentData[0]?.city || '';
   const selectedMarketRentRow = marketRentData.find((row) => row.city === currentMarketRentCity);
+  const selectedVacancyCity = cmhcCities.find((city) => city.geographyId === selectedVacancyMetro);
+  const vacancyChartData = useMemo(() => {
+    const activeSeries = vacancySeriesByMetro[selectedVacancyMetro] ?? [];
+    if (!activeSeries.length) {
+      return [] as VacancyChartDatum[];
+    }
+    const normalized = activeSeries
+      .map((point) => {
+        const parsedDate = new Date(point.date);
+        return { point, timestamp: parsedDate.getTime() };
+      })
+      .filter(({ timestamp }) => !Number.isNaN(timestamp))
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+    if (!normalized.length) {
+      return [] as VacancyChartDatum[];
+    }
+
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - 5);
+    const cutoffTimestamp = cutoff.getTime();
+    const filtered = normalized.filter(({ timestamp }) => timestamp >= cutoffTimestamp);
+    const target = filtered.length ? filtered : normalized.slice(-20);
+
+    return target.map(({ point }) => ({
+      isoDate: point.date,
+      displayLabel: `${point.year} Q${point.quarter}`,
+      label: point.label,
+      vacancyRate: point.rate,
+      season: point.season,
+      quality: point.quality ?? null,
+    }));
+  }, [selectedVacancyMetro, vacancySeriesByMetro]);
+  const latestVacancyPoint = vacancyChartData[vacancyChartData.length - 1] ?? null;
 
   useEffect(() => {
     let isMounted = true;
@@ -492,6 +599,53 @@ function App() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedVacancyMetro || vacancySeriesByMetro[selectedVacancyMetro]) {
+      return;
+    }
+    const controller = new AbortController();
+    let canceled = false;
+    const loadVacancyData = async () => {
+      setVacancyLoading(true);
+      setVacancyError(null);
+      try {
+        const response = await fetch(
+          buildScenarioUrl(`/api/cmhc/vacancy?metroCode=${encodeURIComponent(selectedVacancyMetro)}`),
+          { signal: controller.signal },
+        );
+        const payload = (await response.json().catch(() => ({}))) as VacancyApiResponse & { message?: string };
+        if (!response.ok) {
+          throw new Error(payload?.message ?? 'Unable to load vacancy data');
+        }
+        const series = Array.isArray(payload.points)
+          ? payload.points.filter(
+              (entry): entry is VacancyApiPoint =>
+                Boolean(entry?.date) && typeof entry?.rate === 'number' && Number.isFinite(entry.rate),
+            )
+          : [];
+        if (!canceled) {
+          setVacancySeriesByMetro((prev) => ({ ...prev, [selectedVacancyMetro]: series }));
+        }
+      } catch (error) {
+        if (canceled || (error instanceof DOMException && error.name === 'AbortError')) {
+          return;
+        }
+        setVacancyError(error instanceof Error ? error.message : 'Unable to load vacancy data');
+      } finally {
+        if (!canceled) {
+          setVacancyLoading(false);
+        }
+      }
+    };
+
+    loadVacancyData();
+
+    return () => {
+      canceled = true;
+      controller.abort();
+    };
+  }, [selectedVacancyMetro, vacancySeriesByMetro]);
 
   useEffect(() => {
     if (!Object.keys(percentExpenseValues).length || metrics.grossRentAnnual <= 0) {
@@ -1213,7 +1367,7 @@ function App() {
           <div className="panel market-rent-panel">
             <div className="panel-header">
               <h2>Market Rent Data</h2>
-              <p>Select a neighbourhood to review market rent benchmarks.</p>
+              <p>Review neighbourhood rent benchmarks and monitor CMHC vacancy trends across Canadian cities.</p>
             </div>
             {marketRentData.length === 0 ? (
               <p className="muted">Market rent data is unavailable.</p>
@@ -1267,6 +1421,90 @@ function App() {
                 )}
               </>
             )}
+            <div className="vacancy-section">
+              <div className="vacancy-controls">
+                <div className="vacancy-copy">
+                  <p className="vacancy-title">City vacancy rates</p>
+                  <p className="vacancy-subtitle">Time series (last 5 years) · CMHC Rental Market Survey</p>
+                </div>
+                <label htmlFor="vacancyCitySelect">
+                  City
+                  <select
+                    id="vacancyCitySelect"
+                    value={selectedVacancyMetro}
+                    onChange={(event) => setSelectedVacancyMetro(event.target.value)}
+                    disabled={!cmhcCities.length}
+                  >
+                    {cmhcCities.map((city) => (
+                      <option key={city.geographyId} value={city.geographyId}>
+                        {city.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {latestVacancyPoint && selectedVacancyCity ? (
+                <div className="vacancy-summary">
+                  <div>
+                    <p className="vacancy-summary-label">Latest reading</p>
+                    <p className="vacancy-summary-value">
+                      {formatVacancyRate(latestVacancyPoint.vacancyRate)}
+                      <span>{latestVacancyPoint.displayLabel}</span>
+                    </p>
+                  </div>
+                  <p className="vacancy-summary-city">{selectedVacancyCity.name}</p>
+                </div>
+              ) : null}
+              <div className="vacancy-chart-wrapper">
+                {vacancyError ? (
+                  <p className="vacancy-message error">{vacancyError}</p>
+                ) : vacancyLoading && !vacancyChartData.length ? (
+                  <p className="vacancy-message">Loading CMHC vacancy data…</p>
+                ) : vacancyChartData.length ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={vacancyChartData}
+                      margin={{
+                        top: 10,
+                        right: 12,
+                        left: 0,
+                        bottom: 6,
+                      }}
+                    >
+                      <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
+                      <XAxis dataKey="displayLabel" tick={{ fontSize: 12, fill: '#475569' }} interval="preserveEnd" />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: '#475569' }}
+                        tickFormatter={(value) =>
+                          typeof value === 'number' ? `${vacancyNumberFormatter.format(value)}%` : value
+                        }
+                        width={56}
+                        domain={[
+                          0,
+                          (dataMax) =>
+                            typeof dataMax === 'number' && Number.isFinite(dataMax)
+                              ? Math.max(Math.ceil(dataMax + 1), 5)
+                              : 5,
+                        ]}
+                      />
+                      <Tooltip content={<VacancyTooltip />} />
+                      <Line
+                        type="monotone"
+                        dataKey="vacancyRate"
+                        stroke="#2563eb"
+                        strokeWidth={3}
+                        dot={{ r: 2 }}
+                        activeDot={{ r: 4 }}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="vacancy-message">Vacancy data is unavailable for this city.</p>
+                )}
+              </div>
+              <p className="vacancy-source">Source: CMHC Rental Market Survey.</p>
+            </div>
           </div>
 
           <div className="panel">
