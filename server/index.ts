@@ -93,7 +93,8 @@ const CENSUS_VECTOR_KEYS = {
   englishAndFrench: 'v_CA21_1153',
 } as const;
 const CRIME_DATASET_URL = 'https://www150.statcan.gc.ca/n1/tbl/csv/35100177-eng.zip';
-const GEOCODER_USER_AGENT = '8plex-market-data/1.0';
+const GEOCODER_BASE_URL = 'https://nominatim.openstreetmap.org';
+const GEOCODER_USER_AGENT = '8plex-market-data/1.0 (+https://github.com/rajanchopra/8plex)';
 
 const sendJson = (res: http.ServerResponse, status: number, payload: unknown): void => {
   res.writeHead(status, { ...defaultHeaders, 'Content-Type': 'application/json' });
@@ -542,16 +543,22 @@ const lookupCrimeRateRecord = async (codes: Array<string | null | undefined>): P
 };
 
 const lookupPostalCoordinates = async (postalCode: string) => {
-  const query = encodeURIComponent(`${postalCode} Canada`);
-  const payload = (await fetchJson(`https://geocode.maps.co/search?q=${query}`)) as Array<{
+  const params = new URLSearchParams();
+  params.set('format', 'json');
+  params.set('country', 'Canada');
+  params.set('postalcode', postalCode);
+  params.set('limit', '5');
+  const payload = (await fetchJson(`${GEOCODER_BASE_URL}/search?${params.toString()}`)) as Array<{
     lat?: string;
     lon?: string;
     display_name?: string;
+    addresstype?: string;
   }>;
   if (!Array.isArray(payload) || !payload.length) {
     throw new RequestError(404, 'Unable to geocode postal code');
   }
-  const candidate = payload.find((entry) => entry?.display_name?.includes('Canada')) ?? payload[0];
+  const candidate =
+    payload.find((entry) => entry?.addresstype === 'postcode' && entry?.display_name?.includes('Canada')) ?? payload[0];
   const latitude = Number(candidate?.lat);
   const longitude = Number(candidate?.lon);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {

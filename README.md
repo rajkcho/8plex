@@ -30,6 +30,11 @@ Open `http://localhost:5173` to explore the dashboard. The SPA lets you adjust p
 - Point the SPA at the hosted API by setting `VITE_SCENARIO_API_URL` (e.g., `https://your-api.onrender.com`). When it’s omitted, the app continues to call the relative `/api` path so the Vite proxy handles local dev.
 - Use the Scenario Library panel to name the current assumptions, save with the automatic `MM-DD-YY 1:23PM` timestamp, load any shared scenario, or delete one with the `X` action.
 
+### Market Data Panel
+
+- The `/api/market-data/demographics` route sits on the same Node server and now geocodes postal codes via OpenStreetMap's Nominatim service before querying CensusMapper (2021 dataset) and the StatsCan crime table.
+- The SPA continues to call the relative `/api` path in dev (Vite proxy) and uses `VITE_SCENARIO_API_URL` in production, so hosting the Node server exposes the demographics and CMHC vacancy endpoints alongside the scenario routes.
+
 ### Model Extraction
 
 - `scripts/extractModel.ts` uses `xlsx` (SheetJS) to read `8plexmodel.xlsx`.
