@@ -81,30 +81,24 @@ type DemographicSummary = {
   sources: { census: string; crime: string };
 };
 
+type MaggiMetadataInput = {
+  location?: unknown;
+  cmhc_metro_code?: unknown;
+  cmhc_metro_label?: unknown;
+  postal_code?: unknown;
+};
+
 type MaggiChatRequestBody = {
   message?: unknown;
   conversation_id?: unknown;
-  metadata?: {
-    location?: unknown;
-  } | null;
+  metadata?: MaggiMetadataInput | null;
 };
 
-type PlaceholderRentVacancy = {
-  location: string;
-  averageRents: Record<string, number>;
-  vacancyRatePercent: number;
-  note: string;
-  source: string;
-};
-
-type PlaceholderDemographics = {
-  location: string;
-  population: number;
-  medianAge: number;
-  householdIncome: number;
-  englishOrFrenchPercent: number;
-  note: string;
-  source: string;
+type NormalizedMaggiMetadata = {
+  location: string | null;
+  cmhcMetroCode: string | null;
+  cmhcMetroLabel: string | null;
+  postalCode: string | null;
 };
 
 type PlaceholderMliSummary = {
@@ -118,27 +112,6 @@ const MAGGI_SYSTEM_PROMPT =
   'You are Maggi, a feisty miniature schnauzer with a funny streak who is embedded in a Canadian real estate investment website. You specialize in CMHC data, Statistics Canada demographic data, and the CMHC MLI Select program. You crack light jokes but never fabricate CMHC or StatsCan numbers, and you remind people to confirm legal, tax, or lending decisions with a professional. Use playful language when appropriate while staying factual.';
 
 const maggiConversations = new Map<string, ChatMessage[]>();
-
-const get_cmhc_rent_and_vacancy = (location: string): PlaceholderRentVacancy => ({
-  location,
-  averageRents: {
-    oneBedroom: 1850,
-    twoBedroom: 2350,
-  },
-  vacancyRatePercent: 2.6,
-  note: 'Example values only. Replace with live CMHC rent and vacancy data.',
-  source: 'Placeholder dataset',
-});
-
-const get_statscan_demographics = (location: string): PlaceholderDemographics => ({
-  location,
-  population: 120000,
-  medianAge: 39,
-  householdIncome: 92000,
-  englishOrFrenchPercent: 94,
-  note: 'Example values only. Replace with live Statistics Canada demographics.',
-  source: 'Placeholder dataset',
-});
 
 const get_mli_select_summary = (): PlaceholderMliSummary => ({
   tiers: [
@@ -157,6 +130,108 @@ const trimMaggiHistory = (messages: ChatMessage[]): ChatMessage[] => {
   const [systemMessage, ...rest] = messages;
   const trimmed = rest.slice(-MAX_MAGGI_HISTORY);
   return [systemMessage, ...trimmed];
+};
+
+const normalizeMaggiMetadata = (input?: MaggiMetadataInput | null): NormalizedMaggiMetadata => {
+  const normalizeField = (value: unknown): string | null => {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : null;
+  };
+  return {
+    location: normalizeField(input?.location),
+    cmhcMetroCode: normalizeField(input?.cmhc_metro_code),
+    cmhcMetroLabel: normalizeField(input?.cmhc_metro_label),
+    postalCode: normalizeField(input?.postal_code),
+  };
+};
+
+const percentFormatter = new Intl.NumberFormat('en-CA', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const currencyFormatter = new Intl.NumberFormat('en-CA', {
+  style: 'currency',
+  currency: 'CAD',
+  maximumFractionDigits: 0,
+});
+
+const formatPercentValue = (value: number): string => {
+  if (!Number.isFinite(value)) {
+    return 'n/a';
+  }
+  return `${percentFormatter.format(value)}%`;
+};
+
+const formatDateSummary = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toISOString().split('T')[0];
+};
+
+const buildCmhcVacancyContext = async (metadata: NormalizedMaggiMetadata): Promise<string | null> => {
+  if (!metadata.cmhcMetroCode) {
+    return null;
+  }
+  try {
+    const response = await loadVacancySeries(metadata.cmhcMetroCode, DEFAULT_SEASONS);
+    const sortedPoints = response.points
+      .slice()
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const latestPoint = sortedPoints.at(-1);
+    if (!latestPoint) {
+      return null;
+    }
+    const trailingPoints = sortedPoints.slice(-6);
+    const trailingAverage =
+      trailingPoints.length > 0
+        ? trailingPoints.reduce((sum, point) => sum + (Number(point.rate) || 0), 0) / trailingPoints.length
+        : latestPoint.rate;
+    const metroLabel = metadata.cmhcMetroLabel ?? metadata.location ?? `CMA ${metadata.cmhcMetroCode}`;
+    const retrievedAt = response.retrievedAt ? formatDateSummary(response.retrievedAt) : 'recently';
+    const qualityNote = latestPoint.quality ? ` (CMHC quality grade ${latestPoint.quality})` : '';
+    return `CMHC vacancy for ${metroLabel}: ${formatPercentValue(latestPoint.rate)}${qualityNote} in ${latestPoint.label}. Trailing average across ${trailingPoints.length || 1} surveys: ${formatPercentValue(
+      trailingAverage,
+    )}. Source: CMHC Rental Market Survey (retrieved ${retrievedAt}).`;
+  } catch (error) {
+    console.error('Maggi CMHC context error:', error);
+    return null;
+  }
+};
+
+const buildStatscanContext = async (metadata: NormalizedMaggiMetadata): Promise<string | null> => {
+  const targetLabel = metadata.postalCode ?? metadata.location;
+  if (!targetLabel) {
+    return null;
+  }
+  try {
+    const summary = metadata.postalCode
+      ? await handleDemographicLookup(metadata.postalCode)
+      : await lookupDemographicsByLocation(targetLabel);
+    const regionLabel = summary.location.label ?? summary.censusRegion.label ?? targetLabel;
+    const statsSegments: string[] = [];
+    if (typeof summary.householdIncome === 'number') {
+      statsSegments.push(`median household income about ${currencyFormatter.format(summary.householdIncome)}`);
+    }
+    if (typeof summary.englishPercent === 'number') {
+      statsSegments.push(`English/French speakers ~${formatPercentValue(summary.englishPercent)}`);
+    }
+    if (summary.crimeRate?.per100k && summary.crimeRate.referenceYear) {
+      statsSegments.push(
+        `crime rate ${Math.round(summary.crimeRate.per100k)} per 100k (${summary.crimeRate.referenceYear}, ${summary.crimeRate.geographyName})`,
+      );
+    }
+    if (!statsSegments.length) {
+      statsSegments.push('limited data available for this area');
+    }
+    return `Statistics Canada snapshot near ${regionLabel}: ${statsSegments.join(
+      '; ',
+    )}. Sources: ${summary.sources.census} & ${summary.sources.crime}.`;
+  } catch (error) {
+    console.error('Maggi StatsCan context error:', error);
+    return null;
+  }
 };
 
 class RequestError extends Error {
@@ -412,6 +487,18 @@ const fetchCmhcVacancyData = async (metroCode: string, seasons: Season[]): Promi
     retrievedAt: new Date().toISOString(),
     points: deduped,
   };
+};
+
+const loadVacancySeries = async (metroCode: string, seasons: Season[] = DEFAULT_SEASONS): Promise<VacancyResponse> => {
+  const normalizedSeasons = seasons.length ? seasons : DEFAULT_SEASONS;
+  const cacheKey = `${metroCode}:${normalizedSeasons.slice().sort().join(',')}`;
+  const cached = vacancyCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.payload;
+  }
+  const payload = await fetchCmhcVacancyData(metroCode, normalizedSeasons);
+  vacancyCache.set(cacheKey, { expiresAt: Date.now() + VACANCY_CACHE_MS, payload });
+  return payload;
 };
 
 const parseCsvLine = (line: string): string[] => {
@@ -672,6 +759,91 @@ const lookupPostalCoordinates = async (postalCode: string) => {
   };
 };
 
+const lookupLocationCoordinates = async (query: string) => {
+  const params = new URLSearchParams();
+  params.set('format', 'json');
+  params.set('countrycodes', 'ca');
+  params.set('limit', '5');
+  params.set('q', query);
+  const payload = (await fetchJson(`${GEOCODER_BASE_URL}/search?${params.toString()}`)) as Array<{
+    lat?: string;
+    lon?: string;
+    display_name?: string;
+  }>;
+  if (!Array.isArray(payload) || !payload.length) {
+    throw new RequestError(404, 'Unable to geocode location');
+  }
+  const candidate = payload[0];
+  const latitude = Number(candidate?.lat);
+  const longitude = Number(candidate?.lon);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new RequestError(502, 'Geocoder returned invalid coordinates');
+  }
+  return {
+    latitude,
+    longitude,
+    label: candidate?.display_name ?? query,
+  };
+};
+
+const buildDemographicsFromCoordinates = async (
+  coordinates: { latitude: number; longitude: number; label?: string },
+  referenceLabel: string,
+): Promise<DemographicSummary> => {
+  const geometry = JSON.stringify({
+    type: 'Point',
+    coordinates: [coordinates.longitude, coordinates.latitude],
+  });
+  const regionLevels = ['CT', 'CSD'];
+  let targetRegion: { level: string; geoid: string } | null = null;
+  for (const level of regionLevels) {
+    const geoid = await fetchCensusRegionForLevel(geometry, level);
+    if (geoid) {
+      targetRegion = { level, geoid };
+      break;
+    }
+  }
+  if (!targetRegion) {
+    throw new RequestError(404, 'Unable to map location to a census geography');
+  }
+  const [demographics, cmaGeoId, provinceGeoId] = await Promise.all([
+    fetchCensusDemographics(targetRegion.level, targetRegion.geoid),
+    fetchCensusRegionForLevel(geometry, 'CMA'),
+    fetchCensusRegionForLevel(geometry, 'PR'),
+  ]);
+  const crimeRecord = await lookupCrimeRateRecord([cmaGeoId, provinceGeoId]);
+  return {
+    postalCode: referenceLabel,
+    location: { latitude: coordinates.latitude, longitude: coordinates.longitude, label: coordinates.label ?? referenceLabel },
+    censusRegion: {
+      level: demographics.regionLevel,
+      geoid: demographics.regionGeoId,
+      name: demographics.regionName,
+      label: demographics.regionLabel,
+    },
+    householdIncome: demographics.medianIncome,
+    englishPercent: demographics.englishPercent,
+    englishDetails: {
+      englishOnly: demographics.englishOnly,
+      englishAndFrench: demographics.englishAndFrench,
+      total: demographics.englishTotal,
+    },
+    crimeRate: crimeRecord
+      ? {
+          per100k: crimeRecord.latestValue,
+          referenceYear: crimeRecord.latestYear,
+          geographyName: crimeRecord.geographyName,
+          level: crimeRecord.level,
+          code: crimeRecord.code,
+        }
+      : null,
+    sources: {
+      census: 'CensusMapper CA21',
+      crime: 'StatsCan table 35-10-0177-01 (rate per 100k population)',
+    },
+  };
+};
+
 const fetchCensusRegionForLevel = async (geometry: string, level: string): Promise<string | null> => {
   if (!CANCENSUS_API_KEY) {
     throw new RequestError(500, 'CensusMapper API key is not configured');
@@ -749,58 +921,13 @@ const handleDemographicLookup = async (postalCodeRaw: string): Promise<Demograph
   }
   const formattedPostalCode = `${sanitized.slice(0, 3)} ${sanitized.slice(3)}`;
   const coordinates = await lookupPostalCoordinates(formattedPostalCode);
-  const geometry = JSON.stringify({
-    type: 'Point',
-    coordinates: [coordinates.longitude, coordinates.latitude],
-  });
-  const regionLevels = ['CT', 'CSD'];
-  let targetRegion: { level: string; geoid: string } | null = null;
-  for (const level of regionLevels) {
-    const geoid = await fetchCensusRegionForLevel(geometry, level);
-    if (geoid) {
-      targetRegion = { level, geoid };
-      break;
-    }
-  }
-  if (!targetRegion) {
-    throw new RequestError(404, 'Unable to map postal code to a census geography');
-  }
-  const [demographics, cmaGeoId, provinceGeoId] = await Promise.all([
-    fetchCensusDemographics(targetRegion.level, targetRegion.geoid),
-    fetchCensusRegionForLevel(geometry, 'CMA'),
-    fetchCensusRegionForLevel(geometry, 'PR'),
-  ]);
-  const crimeRecord = await lookupCrimeRateRecord([cmaGeoId, provinceGeoId]);
-  return {
-    postalCode: formattedPostalCode,
-    location: coordinates,
-    censusRegion: {
-      level: demographics.regionLevel,
-      geoid: demographics.regionGeoId,
-      name: demographics.regionName,
-      label: demographics.regionLabel,
-    },
-    householdIncome: demographics.medianIncome,
-    englishPercent: demographics.englishPercent,
-    englishDetails: {
-      englishOnly: demographics.englishOnly,
-      englishAndFrench: demographics.englishAndFrench,
-      total: demographics.englishTotal,
-    },
-    crimeRate: crimeRecord
-      ? {
-          per100k: crimeRecord.latestValue,
-          referenceYear: crimeRecord.latestYear,
-          geographyName: crimeRecord.geographyName,
-          level: crimeRecord.level,
-          code: crimeRecord.code,
-        }
-      : null,
-    sources: {
-      census: 'CensusMapper CA21',
-      crime: 'StatsCan table 35-10-0177-01 (rate per 100k population)',
-    },
-  };
+  return buildDemographicsFromCoordinates(coordinates, formattedPostalCode);
+};
+
+const lookupDemographicsByLocation = async (locationLabel: string): Promise<DemographicSummary> => {
+  const coordinates = await lookupLocationCoordinates(locationLabel);
+  const referenceLabel = coordinates.label ?? locationLabel;
+  return buildDemographicsFromCoordinates(coordinates, referenceLabel);
 };
 
 export const handleHttpRequest = async (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -838,15 +965,8 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
       })
       .filter((value): value is Season => value != null);
     const seasons = parsedSeasons.length ? parsedSeasons : DEFAULT_SEASONS;
-    const cacheKey = `${metroCode}:${seasons.slice().sort().join(',')}`;
-    const cached = vacancyCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      sendJson(res, 200, cached.payload);
-      return;
-    }
     try {
-      const payload = await fetchCmhcVacancyData(metroCode, seasons);
-      vacancyCache.set(cacheKey, { expiresAt: Date.now() + VACANCY_CACHE_MS, payload });
+      const payload = await loadVacancySeries(metroCode, seasons);
       sendJson(res, 200, payload);
     } catch (error) {
       console.error('Failed to fetch CMHC vacancy data:', error);
@@ -898,10 +1018,7 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
         return;
       }
 
-      const location =
-        typeof body.metadata === 'object' && body.metadata != null && typeof body.metadata.location === 'string'
-          ? body.metadata.location.trim()
-          : '';
+      const metadata = normalizeMaggiMetadata(body.metadata);
       const providedConversationId =
         typeof body.conversation_id === 'string' ? body.conversation_id.trim() : undefined;
       const conversationId = providedConversationId && providedConversationId.length ? providedConversationId : randomUUID();
@@ -916,29 +1033,17 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
         ];
 
       const contextSegments: string[] = [];
-      if (location) {
-        // TODO: Replace stub hooks with live CMHC rent/vacancy lookups before building the LLM messages.
-        const rentVacancy = get_cmhc_rent_and_vacancy(location);
-        contextSegments.push(
-          `CMHC rent & vacancy snapshot (${rentVacancy.source}) for ${location}: one bedroom ~${rentVacancy.averageRents.oneBedroom.toLocaleString(
-            'en-CA',
-          )} CAD, two bedroom ~${rentVacancy.averageRents.twoBedroom.toLocaleString('en-CA')} CAD, vacancy approx. ${rentVacancy.vacancyRatePercent}%. ${
-            rentVacancy.note
-          }`,
-        );
-
-        // TODO: Replace stub hooks with live Statistics Canada demographics before building the LLM messages.
-        const demographics = get_statscan_demographics(location);
-        contextSegments.push(
-          `Statistics Canada demographics (${demographics.source}) for ${location}: population around ${
-            demographics.population
-          }, median age ${demographics.medianAge}, median household income ~$${demographics.householdIncome.toLocaleString(
-            'en-CA',
-          )} and approximately ${demographics.englishOrFrenchPercent}% English/French speakers. ${demographics.note}`,
-        );
+      const [cmhcSegment, statscanSegment] = await Promise.all([
+        buildCmhcVacancyContext(metadata),
+        buildStatscanContext(metadata),
+      ]);
+      if (cmhcSegment) {
+        contextSegments.push(cmhcSegment);
+      }
+      if (statscanSegment) {
+        contextSegments.push(statscanSegment);
       }
 
-      // TODO: Replace stub hook with live MLI Select program data before building the LLM messages.
       const mliSummary = get_mli_select_summary();
       contextSegments.push(
         `MLI Select summary (${mliSummary.source}): leverage tiers ${mliSummary.tiers

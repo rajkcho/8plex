@@ -9,8 +9,16 @@ type MaggiMessage = {
   content: string;
 };
 
+type MaggiSidebarMetadata = {
+  location?: string | null;
+  cmhcMetroCode?: string | null;
+  cmhcMetroLabel?: string | null;
+  postalCode?: string | null;
+};
+
 type MaggiSidebarProps = {
   locationHint?: string | null;
+  metadata?: MaggiSidebarMetadata;
 };
 
 const scenarioApiBaseUrl = import.meta.env.VITE_SCENARIO_API_URL ?? '';
@@ -24,6 +32,14 @@ const createMessageId = (): string => {
   }
 };
 
+const normalizeMetadataValue = (value?: string | null): string | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+};
+
 const initialMessage: MaggiMessage = {
   id: 'maggi-intro',
   role: 'assistant',
@@ -33,7 +49,7 @@ const initialMessage: MaggiMessage = {
 
 const chatEndpoints = ['/api/maggi/chat', '/api/marvin/chat'];
 
-const MaggiSidebar = ({ locationHint }: MaggiSidebarProps) => {
+const MaggiSidebar = ({ locationHint, metadata }: MaggiSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MaggiMessage[]>([initialMessage]);
@@ -96,7 +112,14 @@ const MaggiSidebar = ({ locationHint }: MaggiSidebarProps) => {
               body: JSON.stringify({
                 message: trimmed,
                 conversation_id: conversationId,
-                metadata: { location: locationHint ?? null },
+                metadata: {
+                  location: normalizeMetadataValue(metadata?.location ?? locationHint ?? null),
+                  cmhc_metro_code: normalizeMetadataValue(metadata?.cmhcMetroCode ?? null),
+                  cmhc_metro_label: normalizeMetadataValue(
+                    metadata?.cmhcMetroLabel ?? metadata?.location ?? locationHint ?? null,
+                  ),
+                  postal_code: normalizeMetadataValue(metadata?.postalCode ?? null),
+                },
               }),
             });
             if (response.status === 404) {

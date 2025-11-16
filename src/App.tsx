@@ -584,6 +584,15 @@ function App() {
     }));
   }, [selectedVacancyMetro, vacancySeriesByMetro]);
   const latestVacancyPoint = vacancyChartData[vacancyChartData.length - 1] ?? null;
+  const maggiMetadata = useMemo(() => {
+    const resolvedLocation = selectedVacancyCity?.name ?? currentMarketRentCity ?? null;
+    return {
+      location: resolvedLocation,
+      cmhcMetroCode: selectedVacancyCity?.geographyId ?? null,
+      cmhcMetroLabel: selectedVacancyCity?.name ?? null,
+      postalCode: null as string | null,
+    };
+  }, [selectedVacancyCity, currentMarketRentCity]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1707,7 +1716,7 @@ function App() {
         </div>
         </section>
       </div>
-      <MaggiSidebar />
+      <MaggiSidebar locationHint={maggiMetadata.location} metadata={maggiMetadata} />
     </>
   );
 }
