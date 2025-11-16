@@ -128,6 +128,15 @@ type VacancyCityPhoto = {
   altText?: string;
 };
 
+const fallbackVacancyPhoto: VacancyCityPhoto = {
+  imageUrl:
+    'https://images.pexels.com/photos/1486347/pexels-photo-1486347.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080',
+  photographer: 'Andre Furtado',
+  photographerUrl: 'https://www.pexels.com/@andre-furtado-43594',
+  sourceUrl: 'https://www.pexels.com/photo/cn-tower-with-fireworks-1486347/',
+  altText: 'City skyline at dusk',
+};
+
 type PexelsPhotoSrc = {
   original?: string;
   large?: string;
@@ -584,10 +593,11 @@ function App() {
   const currentMarketRentCity = selectedMarketCity || marketRentData[0]?.city || '';
   const selectedMarketRentRow = marketRentData.find((row) => row.city === currentMarketRentCity);
   const selectedVacancyCity = cmhcCities.find((city) => city.geographyId === selectedVacancyMetro);
-  const hasVacancyPhotoEntry =
-    Boolean(selectedVacancyMetro) && Object.prototype.hasOwnProperty.call(vacancyCityPhotos, selectedVacancyMetro);
-  const vacancyPhoto =
-    hasVacancyPhotoEntry && selectedVacancyMetro ? vacancyCityPhotos[selectedVacancyMetro] ?? null : null;
+const hasVacancyPhotoEntry =
+  Boolean(selectedVacancyMetro) && Object.prototype.hasOwnProperty.call(vacancyCityPhotos, selectedVacancyMetro);
+const vacancyPhoto =
+  hasVacancyPhotoEntry && selectedVacancyMetro ? vacancyCityPhotos[selectedVacancyMetro] ?? null : null;
+const vacancySummaryPhoto = vacancyPhoto ?? fallbackVacancyPhoto;
   const vacancyChartData = useMemo(() => {
     const activeSeries = vacancySeriesByMetro[selectedVacancyMetro] ?? [];
     if (!activeSeries.length) {
@@ -621,18 +631,18 @@ function App() {
     }));
   }, [selectedVacancyMetro, vacancySeriesByMetro]);
   const latestVacancyPoint = vacancyChartData[vacancyChartData.length - 1] ?? null;
-  const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
-    if (!vacancyPhoto) {
-      return undefined;
-    }
-    return {
-      backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 64, 175, 0.4)), url(${vacancyPhoto.imageUrl})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-    };
-  }, [vacancyPhoto]);
-  const vacancySummaryClassName = vacancyPhoto ? 'vacancy-summary has-photo' : 'vacancy-summary';
+const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
+  if (!vacancySummaryPhoto) {
+    return undefined;
+  }
+  return {
+    backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 64, 175, 0.4)), url(${vacancySummaryPhoto.imageUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  };
+}, [vacancySummaryPhoto]);
+const vacancySummaryClassName = vacancySummaryPhoto ? 'vacancy-summary has-photo' : 'vacancy-summary';
   const maggiMetadata = useMemo(() => {
     const resolvedLocation = selectedVacancyCity?.name ?? currentMarketRentCity ?? null;
     return {
@@ -1924,11 +1934,11 @@ function App() {
                   </p>
                 </div>
                 <p className="vacancy-summary-city">{selectedVacancyCity.name}</p>
-                {vacancyPhoto?.photographer ? (
+                {vacancySummaryPhoto?.photographer ? (
                   <p className="vacancy-photo-credit">
-                    Photo: {vacancyPhoto.photographer} /{' '}
-                    {vacancyPhoto.photographerUrl ? (
-                      <a href={vacancyPhoto.photographerUrl} target="_blank" rel="noreferrer">
+                    Photo: {vacancySummaryPhoto.photographer} /{' '}
+                    {vacancySummaryPhoto.photographerUrl ? (
+                      <a href={vacancySummaryPhoto.photographerUrl} target="_blank" rel="noreferrer">
                         Pexels
                       </a>
                     ) : (
