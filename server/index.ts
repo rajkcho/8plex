@@ -723,7 +723,7 @@ const handleDemographicLookup = async (postalCodeRaw: string): Promise<Demograph
   };
 };
 
-const server = http.createServer(async (req, res) => {
+export const handleHttpRequest = async (req: http.IncomingMessage, res: http.ServerResponse) => {
   const method = req.method ?? 'GET';
   const requestUrl = req.url ?? '/';
 
@@ -871,8 +871,21 @@ const server = http.createServer(async (req, res) => {
   }
 
   sendJson(res, 404, { message: 'Not Found' });
-});
+};
 
-server.listen(PORT, () => {
-  console.log(`Scenario API listening on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  const server = http.createServer((req, res) => {
+    handleHttpRequest(req, res).catch((error) => {
+      console.error('Unhandled server error:', error);
+      if (!res.headersSent) {
+        sendJson(res, 500, { message: 'Internal server error' });
+      } else if (!res.writableEnded) {
+        res.end();
+      }
+    });
+  });
+
+  server.listen(PORT, () => {
+    console.log(`Scenario API listening on http://localhost:${PORT}`);
+  });
+}

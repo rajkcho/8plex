@@ -35,6 +35,13 @@ Open `http://localhost:5173` to explore the dashboard. The SPA lets you adjust p
 - The `/api/market-data/demographics` route sits on the same Node server and now geocodes postal codes via OpenStreetMap's Nominatim service before querying CensusMapper (2021 dataset) and the StatsCan crime table.
 - The SPA continues to call the relative `/api` path in dev (Vite proxy) and uses `VITE_SCENARIO_API_URL` in production, so hosting the Node server exposes the demographics and CMHC vacancy endpoints alongside the scenario routes.
 
+### Deploying the API to Vercel
+
+1. Push the repo (with `vercel.json` and `api/[[...path]].ts`) to GitHub.
+2. In Vercel, import the repo, leave the root directory at `/`, and use the default **Build Command** (`npm install` is enough—the API lives under `api/`).
+3. After the first deploy, copy the Vercel URL (e.g., `https://eightplex.vercel.app`) and set `VITE_SCENARIO_API_URL` in `.env.production` so the SPA points at the hosted API when rebuilt.
+4. Optional: add `CANCENSUS_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` as Vercel Environment Variables if you need to override the defaults.
+
 ### Model Extraction
 
 - `scripts/extractModel.ts` uses `xlsx` (SheetJS) to read `8plexmodel.xlsx`.
