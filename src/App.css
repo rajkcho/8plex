@@ -746,11 +746,11 @@ input[type='number'] {
 }
 
 .capital-stack-metrics-column {
-  flex: 0 0 265px;
+  flex: 0 0 270px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-left: 1.1rem;
+  margin-left: 1.5rem;
 }
 
 .capital-stack-panel .input-row {
@@ -780,17 +780,17 @@ input[type='number'] {
 }
 
 .cap-stack-metric-card {
-  background: #0b1e3c;
+  background: #000080;
   border-radius: 1rem;
-  min-height: 130px;
+  height: 110px;
   width: 100%;
-  padding: 1.25rem;
+  padding: 1.1rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.35rem;
   color: #fff;
-  box-shadow: 0 15px 30px rgba(2, 6, 23, 0.45);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
