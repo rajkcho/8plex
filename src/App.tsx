@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties, FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type FinanceMetrics, type UnitAssumption } from './model/financeModel';
 import diskIcon from '../disk.png';
-import headerLogo from '../logo2.png';
+import headerLogo from '../logo3.png';
 import './App.css';
 import MaggiSidebar from './components/MaggiSidebar.tsx';
 import {
@@ -1704,7 +1704,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={newExpenseValue}
+                      value={formatCurrencyInputValue(parseCurrencyInputValue(newExpenseValue))}
                       onChange={(event) => {
                         setNewExpenseValue(event.target.value);
                         if (newExpenseError) {

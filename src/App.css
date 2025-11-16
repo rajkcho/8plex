@@ -655,7 +655,7 @@ input[type='number'] {
 .currency-input .prefix {
   position: absolute;
   top: 50%;
-  left: 0.75rem; /* Adjusted for better alignment */
+  left: 0.5rem; /* Adjusted for better centering */
   transform: translateY(-50%);
   font-weight: 600;
   color: #1d4ed8;
@@ -664,7 +664,7 @@ input[type='number'] {
 
 .currency-input input {
   width: 100%;
-  padding: 0.5rem 0.75rem 0.5rem 2rem; /* Adjusted padding-left */
+  padding: 0.5rem 0.75rem 0.5rem 1.75rem; /* Adjusted padding-left */
   border-radius: 0.6rem;
   border: 1px solid #c7d7f7;
   font-size: 0.95rem;
