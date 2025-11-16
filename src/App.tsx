@@ -539,7 +539,7 @@ function App() {
     const data: CashFlowBar[] = [
       { name: 'Gross Rent', value: metrics.grossRentAnnual, color: '#0f172a' },
       { name: 'Other Income', value: metrics.otherIncomeAnnual, color: '#1e293b' },
-      { name: 'Operating Expenses', value: -metrics.operatingExpensesAnnual, color: '#334155' },
+      { name: 'OpEx', value: -metrics.operatingExpensesAnnual, color: '#334155' },
       { name: 'Debt Service', value: -metrics.debtServiceAnnual, color: '#475569' },
       { name: 'Net Cash Flow', value: metrics.cashFlow, color: '#0a0f17', isTotal: true },
     ];
