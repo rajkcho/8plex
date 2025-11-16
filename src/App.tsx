@@ -469,12 +469,12 @@ const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
   const numericValue = Number(value);
   const isPositive = numericValue >= 0;
   const yPosition = Number(y);
-  const labelY = isPositive ? yPosition - 8 : yPosition + 10;
+  const labelY = isPositive ? yPosition - 8 : yPosition + 15;
   const labelColor = isPositive ? '#0f172a' : '#f8fafc';
   const xPosition = Number(x) + Number(width) / 2;
 
   return (
-    <text x={xPosition} y={labelY} textAnchor="middle" fill={labelColor} fontSize={12} fontWeight={600}>
+    <text x={xPosition} y={labelY} textAnchor="middle" fill={labelColor} fontSize="0.95rem" fontWeight={600}>
       {currencyFormatter.format(numericValue)}
     </text>
   );
@@ -1746,8 +1746,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                 {waterfallData.map((entry) => (
                   <Cell key={entry.name} fill={entry.isTotal ? '#16a34a' : entry.color} />
                 ))}
-                <LabelList dataKey="value" position="top" formatter={(value) => (typeof value === 'number' && value > 0 ? currencyFormatter.format(value) : '')} />
-                <LabelList dataKey="value" position="insideBottom" formatter={(value) => (typeof value === 'number' && value <= 0 ? currencyFormatter.format(value) : '')} fill="#fff" />
+                <LabelList dataKey="value" content={<WaterfallLabel />} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

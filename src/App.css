@@ -333,8 +333,8 @@
   isolation: isolate;
   width: 90.33609375%;
   max-width: 939.495375px;
-  max-height: 67.5667125px;
-  min-height: 53.08813125px;
+  max-height: 74.49229053125px;
+  min-height: 58.52966471875px;
 }
 
 .vacancy-summary-wrapper {
@@ -1125,7 +1125,7 @@ input[type='number'] {
 .header-metrics .metric-card {
   min-width: 180px;
   flex: 1;
-  background: rgba(101, 126, 152, 0.3);
+  background: rgba(101, 126, 152, 0.95);
   color: #fff;
   box-shadow: 0 12px 25px rgba(101, 126, 152, 0.35);
   border: 1px solid rgba(101, 126, 152, 0.45);
