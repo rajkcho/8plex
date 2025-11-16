@@ -96,6 +96,20 @@ const CRIME_DATASET_URL = 'https://www150.statcan.gc.ca/n1/tbl/csv/35100177-eng.
 const GEOCODER_BASE_URL = 'https://nominatim.openstreetmap.org';
 const GEOCODER_USER_AGENT = '8plex-market-data/1.0 (+https://github.com/rajanchopra/8plex)';
 
+const formatUnknownError = (error: unknown): string => {
+  if (error instanceof Error) {
+    if (error.stack && error.message && !error.stack.includes(error.message)) {
+      return `${error.message}\n${error.stack}`;
+    }
+    return error.stack ?? error.message ?? error.name ?? 'Unknown error';
+  }
+  try {
+    return typeof error === 'string' ? error : JSON.stringify(error);
+  } catch {
+    return 'Unknown error';
+  }
+};
+
 const sendJson = (res: http.ServerResponse, status: number, payload: unknown): void => {
   res.writeHead(status, { ...defaultHeaders, 'Content-Type': 'application/json' });
   res.end(JSON.stringify(payload));
@@ -775,7 +789,7 @@ const server = http.createServer(async (req, res) => {
         console.error('Failed to load demographic data:', error);
         sendJson(res, 502, {
           message: 'Unable to load demographic data',
-          detail: error instanceof Error ? error.message : undefined,
+          detail: formatUnknownError(error),
         });
       }
     }
