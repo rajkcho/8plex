@@ -492,6 +492,18 @@ type VacancyTooltipProps = TooltipProps<number, string> & {
   payload?: Array<{ payload: VacancyChartDatum }>;
 };
 
+const WrappedAxisTick = ({ x, y, payload }: any) => {
+  const { value } = payload;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={0} y={0} dy={16} textAnchor="end" fill="#666" transform="rotate(-35)">
+        {value}
+      </text>
+    </g>
+  );
+};
+
+
 const VacancyTooltip = ({ active, payload }: VacancyTooltipProps) => {
   if (!active || !payload?.length) {
     return null;
@@ -697,7 +709,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
             <tr key={`interest-${interestDelta}`}>
               <th scope="row">{formatInterestLabel(interestDelta)}</th>
               {matrix[rowIndex].map((value, colIndex) => (
-                <td key={`cell-${rowIndex}-${colIndex}`}>{valueFormatter(value)}</td>
+                <td key={`cell-${rowIndex}-${colIndex}`} className={rowIndex === Math.floor(sensitivityAxisCount / 2) && colIndex === Math.floor(sensitivityAxisCount / 2) ? 'sensitivity-table-center-cell' : ''}>{valueFormatter(value)}</td>
               ))}
             </tr>
           ))}
@@ -1748,11 +1760,8 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#d3e1ff" />
                 <XAxis
                   dataKey="name"
-                  tick={{ fill: '#475569', fontSize: 12 }}
+                  tick={<WrappedAxisTick />}
                   height={60}
-                  angle={-25}
-                  textAnchor="end"
-                  interval={0}
                 />
                 <YAxis domain={scenarioComparisonDomain} hide />
                 <Tooltip content={<ScenarioComparisonTooltip />} cursor={{ fill: 'rgba(22,163,74,0.08)' }} />

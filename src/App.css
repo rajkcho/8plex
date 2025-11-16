@@ -185,7 +185,7 @@
 }
 
 .sensitivity-table th {
-  background: #f8fafc;
+  background: #e0edff;
   font-weight: 600;
   color: #475569;
 }
@@ -193,6 +193,10 @@
 .sensitivity-table td {
   font-weight: 600;
   color: #0f172a;
+}
+
+.sensitivity-table-center-cell {
+  background-color: #d9f99d;
 }
 
 .market-data-grid {
