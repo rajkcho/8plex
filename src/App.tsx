@@ -1928,11 +1928,10 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                   <div className="vacancy-summary-header">
                     <p className="vacancy-summary-location">
                       {selectedVacancyCity.name}
-                      <span>Latest</span>
+                      <span>Latest ({latestVacancyPoint.displayLabel})</span>
                     </p>
                     <p className="vacancy-summary-value">
                       {formatVacancyRate(latestVacancyPoint.vacancyRate)}
-                      <span>{latestVacancyPoint.displayLabel}</span>
                     </p>
                   </div>
                   {vacancySummaryPhoto?.photographer ? (
