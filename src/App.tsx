@@ -469,7 +469,7 @@ const WaterfallLabel = ({ x, y, width, value }: LabelProps) => {
   const numericValue = Number(value);
   const isPositive = numericValue >= 0;
   const yPosition = Number(y);
-  const labelY = isPositive ? yPosition - 8 : yPosition + 20;
+  const labelY = isPositive ? yPosition - 8 : yPosition + 10;
   const labelColor = isPositive ? '#0f172a' : '#f8fafc';
   const xPosition = Number(x) + Number(width) / 2;
 

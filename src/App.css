@@ -331,10 +331,10 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  width: 86.25%;
-  max-width: 897px;
-  max-height: 59.5px;
-  min-height: 46.75px;
+  width: 81.9375%;
+  max-width: 852.15px;
+  max-height: 61.285px;
+  min-height: 48.1525px;
 }
 
 .vacancy-summary-wrapper {
