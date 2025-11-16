@@ -655,7 +655,7 @@ input[type='number'] {
 .currency-input .prefix {
   position: absolute;
   top: 50%;
-  left: 0.9rem;
+  left: 0.75rem; /* Adjusted for better alignment */
   transform: translateY(-50%);
   font-weight: 600;
   color: #1d4ed8;
@@ -664,7 +664,7 @@ input[type='number'] {
 
 .currency-input input {
   width: 100%;
-  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+  padding: 0.5rem 0.75rem 0.5rem 2rem; /* Adjusted padding-left */
   border-radius: 0.6rem;
   border: 1px solid #c7d7f7;
   font-size: 0.95rem;
@@ -1100,6 +1100,11 @@ input[type='number'] {
 
 .expense-add label input {
   font-weight: 400;
+  padding: 0.5rem 0.75rem; /* Matched padding */
+  border-radius: 0.6rem; /* Matched border-radius */
+  border: 1px solid #c7d7f7; /* Matched border */
+  font-size: 0.95rem; /* Matched font-size */
+  background: #fff; /* Matched background */
 }
 
 .metrics-grid {

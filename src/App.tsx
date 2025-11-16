@@ -496,7 +496,7 @@ const WrappedAxisTick = ({ x, y, payload }: any) => {
   const { value } = payload;
   return (
     <g transform={`translate(${x},${y})`}>
-      <text x={0} y={0} dy={16} textAnchor="end" fill="#666" transform="rotate(-35)" fontSize={12}>
+      <text x={0} y={0} dy={16} textAnchor="end" fill="#666" transform="rotate(-35)" fontSize={10}>
         {value}
       </text>
     </g>
@@ -1896,7 +1896,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
           </div>
           <div className="market-card vacancy-card">
             <div className="market-card-header">
-              <h3>City vacancy rates</h3>
+              <h3>City Vacancy Rates</h3>
               <p>Latest CMHC survey periods (highest available frequency).</p>
             </div>
             <div className="vacancy-controls">
