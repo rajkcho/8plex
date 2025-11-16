@@ -1889,8 +1889,8 @@ function App() {
               <p>Latest CMHC survey periods (highest available frequency).</p>
             </div>
             <div className="vacancy-controls">
-              <label htmlFor="vacancyCitySelect">
-                City
+              <label className="vacancy-select-label" htmlFor="vacancyCitySelect">
+                <span>City</span>
                 <select
                   id="vacancyCitySelect"
                   value={selectedVacancyMetro}
@@ -1906,7 +1906,8 @@ function App() {
               </label>
             </div>
             {latestVacancyPoint && selectedVacancyCity ? (
-              <div className={vacancySummaryClassName} style={vacancySummaryStyle}>
+              <div className="vacancy-summary-wrapper">
+                <div className={vacancySummaryClassName} style={vacancySummaryStyle}>
                 <div>
                   <p className="vacancy-summary-label">Latest reading</p>
                   <p className="vacancy-summary-value">
@@ -1927,6 +1928,7 @@ function App() {
                     )}
                   </p>
                 ) : null}
+                </div>
               </div>
             ) : null}
             <div className="vacancy-chart-wrapper">

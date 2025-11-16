@@ -300,12 +300,16 @@
   align-items: flex-end;
 }
 
-.vacancy-controls label {
+.vacancy-select-label {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.65rem;
   font-weight: 600;
   color: #475569;
+}
+
+.vacancy-select-label span {
+  font-size: 0.9rem;
 }
 
 .vacancy-controls select {
@@ -331,6 +335,15 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  width: 50%;
+  max-width: 520px;
+  min-width: 240px;
+}
+
+.vacancy-summary-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .vacancy-summary-label {
