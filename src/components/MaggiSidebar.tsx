@@ -31,6 +31,8 @@ const initialMessage: MaggiMessage = {
     'Woof! I\'m Maggi, your feisty miniature schnauzer who doubles as a real estate nerd. Ask about CMHC rents, vacancy drama, StatsCan people stats, or how MLI Select treats your latest doghouse-sized high rise.',
 };
 
+const chatEndpoints = ['/api/maggi/chat', '/api/marvin/chat'];
+
 const MaggiSidebar = ({ locationHint }: MaggiSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -84,20 +86,38 @@ const MaggiSidebar = ({ locationHint }: MaggiSidebarProps) => {
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl('/api/maggi/chat'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: trimmed,
-          conversation_id: conversationId,
-          metadata: { location: locationHint ?? null },
-        }),
-      });
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        throw new Error(errorText || 'Request failed');
-      }
-      const payload = (await response.json()) as { reply?: string; conversation_id?: string };
+      const payload = await (async () => {
+        let lastError: Error | null = null;
+        for (const path of chatEndpoints) {
+          try {
+            const response = await fetch(buildApiUrl(path), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: trimmed,
+                conversation_id: conversationId,
+                metadata: { location: locationHint ?? null },
+              }),
+            });
+            if (response.status === 404) {
+              continue;
+            }
+            if (!response.ok) {
+              const errorText = await response.text().catch(() => '');
+              throw new Error(errorText || 'Request failed');
+            }
+            return (await response.json()) as { reply?: string; conversation_id?: string };
+          } catch (error) {
+            if (error instanceof Error) {
+              lastError = error;
+            }
+          }
+        }
+        if (lastError) {
+          throw lastError;
+        }
+        throw new Error('Maggi could not reach the den.');
+      })();
       const reply = payload.reply?.trim();
       if (!reply) {
         throw new Error('Maggi got distracted and forgot to reply.');
