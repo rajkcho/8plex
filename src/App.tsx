@@ -895,12 +895,13 @@ function App() {
             Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
           </div>
         </div>
-        <div className="header-metrics">
-          {metricCards.map((card) => (
-            <MetricCardView key={card.label} card={card} />
-          ))}
-        </div>
       </header>
+
+      <div className="header-metrics">
+        {metricCards.map((card) => (
+          <MetricCardView key={card.label} card={card} />
+        ))}
+      </div>
 
       <section className="panel-sections">
         <div className="panel scenario-panel full-width-panel">
