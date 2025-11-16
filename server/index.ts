@@ -1,6 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import readline from 'node:readline';
+import dns from 'node:dns';
 import { randomUUID } from 'node:crypto';
 import zlib from 'node:zlib';
 import unzipper from 'unzipper';
@@ -11,6 +12,12 @@ const PORT = Number(process.env.PORT ?? 4000);
 const store = createScenarioStore();
 const CMHC_ENDPOINT = 'https://www03.cmhc-schl.gc.ca/hmip-pimh/en/TableMapChart/ExportTable';
 const VACANCY_CACHE_MS = 1000 * 60 * 60; // 1 hour
+
+try {
+  dns.setDefaultResultOrder?.('ipv4first');
+} catch {
+  // Ignore environments that do not support overriding the resolution order.
+}
 
 type ScenarioRequestBody = {
   name?: unknown;
