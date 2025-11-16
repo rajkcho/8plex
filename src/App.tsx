@@ -1516,7 +1516,7 @@ function App() {
             <div className="capital-stack-metrics-column">
               <div className="assumption-cards vertical">
                 {assumptionCards.map((card) => (
-                    <div key={card.label} className="metric-card subtle cap-stack-metric-card">
+                    <div key={card.label} className="metric-card cap-stack-metric-card">
                     <p className="metric-label">{card.label}</p>
                     <p className="metric-value">{card.format(card.value)}</p>
                     {card.subtitle && <p className="metric-subtitle">{card.subtitle}</p>}
