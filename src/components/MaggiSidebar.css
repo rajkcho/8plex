@@ -4,7 +4,7 @@
   bottom: 24px;
   z-index: 999;
   border: none;
-  background: rgba(70, 130, 180, 0.15); /* Light navy blue, 15% transparent */
+  background: transparent;
   padding: 0;
   cursor: pointer;
 }
