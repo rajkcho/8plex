@@ -512,7 +512,10 @@ const VacancyTooltip = ({ active, payload }: VacancyTooltipProps) => {
   );
 };
 
+import AccessPage from './components/AccessPage';
+
 function App() {
+  const [isAccessGranted, setIsAccessGranted] = useState(false);
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
   const [percentExpenseValues, setPercentExpenseValues] = useState<Record<string, number>>(() =>
     derivePercentExpenseValues(baselineAssumptions),
@@ -1265,6 +1268,10 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
       },
     },
   ];
+
+  if (!isAccessGranted) {
+    return <AccessPage onAccessGranted={() => setIsAccessGranted(true)} />;
+  }
 
   return (
     <>

@@ -1,0 +1,50 @@
+
+.success-animation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #000;
+  overflow: hidden;
+}
+
+.success-text {
+  font-size: 10rem;
+  color: #fff;
+  animation: text-flash 1s ease-in-out;
+}
+
+.lightning {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 100%;
+  background-color: #fff;
+  transform: translate(-50%, -50%) rotate(45deg);
+  animation: lightning-strike 0.5s ease-in-out;
+}
+
+@keyframes text-flash {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes lightning-strike {
+  0% {
+    height: 0;
+  }
+  50% {
+    height: 100%;
+  }
+  100% {
+    height: 0;
+  }
+}
