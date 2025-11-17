@@ -4,7 +4,7 @@
   bottom: 24px;
   z-index: 999;
   border: none;
-  background: rgba(173, 216, 230, 0.15);
+  background: rgba(70, 130, 180, 0.15); /* Light navy blue, 15% transparent */
   padding: 0;
   cursor: pointer;
 }

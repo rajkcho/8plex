@@ -257,7 +257,7 @@
 .market-rent-table-wrapper {
   flex: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch; /* Changed from flex-start to stretch */
   width: 100%;
 }
 
@@ -740,12 +740,12 @@ input[type='number'] {
 }
 
 .capital-stack-metrics-column {
-  flex: 0 0 316px;
-  max-width: 316px;
+  flex: 0 0 395px; /* Increased width by 25% (316 * 1.25 = 395) */
+  max-width: 395px; /* Increased width by 25% */
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-left: 1.25rem;
+  margin-left: 2.5rem; /* Moved further to the right */
   padding-left: 1.25rem;
   border-left: 1px solid rgba(15, 23, 42, 0.08);
   margin-top: 0;
