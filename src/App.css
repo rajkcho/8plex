@@ -257,8 +257,9 @@
 .market-rent-table-wrapper {
   flex: 1;
   display: flex;
-  align-items: stretch; /* Changed from flex-start to stretch */
+  align-items: stretch;
   width: 100%;
+  height: 280px; /* Set fixed height to match vacancy chart wrapper */
 }
 
 .market-rent-table {
@@ -746,7 +747,7 @@ input[type='number'] {
   flex-direction: column;
   gap: 0.75rem;
   margin-left: 2.5rem; /* Moved further to the right */
-  padding-left: 1.25rem;
+  padding-left: 2.5rem; /* Increased padding-left */
   border-left: 1px solid rgba(15, 23, 42, 0.08);
   margin-top: 0;
   align-self: stretch;
