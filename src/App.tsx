@@ -492,16 +492,7 @@ type VacancyTooltipProps = TooltipProps<number, string> & {
   payload?: Array<{ payload: VacancyChartDatum }>;
 };
 
-const WrappedAxisTick = ({ x, y, payload }: any) => {
-  const { value } = payload;
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <text x={0} y={0} dy={16} textAnchor="end" fill="#666" transform="rotate(-35)" fontSize={10}>
-        {value}
-      </text>
-    </g>
-  );
-};
+
 
 
 const VacancyTooltip = ({ active, payload }: VacancyTooltipProps) => {
@@ -1754,11 +1745,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
             <ResponsiveContainer width="100%" height={360}>
               <BarChart data={scenarioComparisonData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#d3e1ff" />
-                <XAxis
-                  dataKey="name"
-                  tick={<WrappedAxisTick />}
-                  height={60}
-                />
+                <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 12 }} />
                 <YAxis domain={scenarioComparisonDomain} hide />
                 <Tooltip content={<ScenarioComparisonTooltip />} cursor={{ fill: 'rgba(22,163,74,0.08)' }} />
                 <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />

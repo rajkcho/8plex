@@ -180,7 +180,7 @@
 .sensitivity-table td {
   border: 1px solid #e2e8f0;
   padding: 0.3rem 0.45rem;
-  text-align: center;
+  text-align: center; /* Ensure text is centered */
   min-width: 70px;
 }
 
@@ -270,7 +270,7 @@
 
 .market-rent-table th,
 .market-rent-table td {
-  text-align: left;
+  text-align: center; /* Changed from left to center */
   padding: 0.75rem 0.5rem;
   border-bottom: 1px solid #e2e8f0;
 }
