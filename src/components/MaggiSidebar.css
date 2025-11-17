@@ -4,7 +4,7 @@
   bottom: 24px;
   z-index: 999;
   border: none;
-  background: transparent;
+  background: rgba(173, 216, 230, 0.15);
   padding: 0;
   cursor: pointer;
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties, FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type FinanceMetrics, type UnitAssumption } from './model/financeModel';
+import trashIcon from '../trash.png';
 import diskIcon from '../disk.png';
 import headerLogo from '../logo3.png';
 import './App.css';
@@ -1352,7 +1353,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                     }}
                     disabled={!activeScenarioId}
                   >
-                    Delete
+                    <img src={trashIcon} alt="Delete" className="scenario-delete-icon" />
                   </button>
                 </div>
                 <p className="scenario-picker-hint">Selecting a scenario loads its assumptions.</p>

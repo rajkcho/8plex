@@ -256,7 +256,6 @@
 
 .market-rent-table-wrapper {
   flex: 1;
-  min-height: 280px;
   display: flex;
   align-items: flex-start;
   width: 100%;
@@ -582,6 +581,13 @@
 .scenario-delete-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.scenario-delete-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  object-fit: contain;
+  display: block;
 }
 
 .scenario-picker-hint {
