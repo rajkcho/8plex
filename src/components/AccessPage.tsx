@@ -1,8 +1,6 @@
 
 import React, { useState } from 'react';
 import SuccessAnimation from './SuccessAnimation';
-import { HASHED_ACCESS_CODES } from '../assets/accessCodes';
-import bcrypt from 'bcryptjs';
 
 const AccessPage = ({ onAccessGranted }: { onAccessGranted: () => void }) => {
   const [accessCode, setAccessCode] = useState('');
@@ -13,17 +11,26 @@ const AccessPage = ({ onAccessGranted }: { onAccessGranted: () => void }) => {
     e.preventDefault();
     setError('');
 
-    const isCodeValid = await Promise.all(
-      HASHED_ACCESS_CODES.map((hashedCode) => bcrypt.compare(accessCode, hashedCode))
-    ).then((results) => results.some((result) => result));
+    try {
+      const response = await fetch('/api/verify-access-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accessCode }),
+      });
 
-    if (isCodeValid) {
-      setShowSuccessAnimation(true);
-      setTimeout(() => {
-        onAccessGranted();
-      }, 1000);
-    } else {
-      setError('Invalid access code');
+      if (response.ok) {
+        setShowSuccessAnimation(true);
+        setTimeout(() => {
+          onAccessGranted();
+        }, 1000);
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Invalid access code');
+      }
+    } catch (error) {
+      setError('An error occurred. Please try again.');
     }
   };
 

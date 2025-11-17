@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import type { ChangeEvent, CSSProperties, FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type FinanceMetrics, type UnitAssumption } from './model/financeModel';
 import trashIcon from '../trash.png';
 import diskIcon from '../disk.png';
@@ -17,16 +17,20 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  LineChart,
+  Line,
 } from 'recharts';
 import type { TooltipProps } from 'recharts';
 import rentsCsv from '../rentsv2.csv?raw';
 import cmhcCmaList from './assets/cmhc-cmas.json';
-
-import initialScenarios from './assets/scenarios.json';
+import vacancyFallbackImage from './assets/vacancy-fallback.jpg';
 
 const baselineAssumptions = loadBaselineAssumptions();
 const baselineMetrics = calculateMetrics(baselineAssumptions);
+const scenarioApiBaseUrl = import.meta.env.VITE_SCENARIO_API_URL ?? '';
+const pexelsApiKey = import.meta.env.VITE_PEXELS_API_KEY ?? '';
 
+const buildScenarioUrl = (path: string): string => (scenarioApiBaseUrl ? `${scenarioApiBaseUrl}${path}` : path);
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -40,9 +44,12 @@ const percentFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 });
 
+const vacancyNumberFormatter = new Intl.NumberFormat('en-CA', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
-
-
+const formatVacancyRate = (value: number): string => `${vacancyNumberFormatter.format(value)}%`;
 
 const formatCurrencyInputValue = (value?: number | null): string => {
   if (value == null || Number.isNaN(value)) {
@@ -90,15 +97,67 @@ type CmhcCity = {
   geographyId: string;
 };
 
+type VacancyApiPoint = {
+  date: string;
+  year: number;
+  quarter: number;
+  season: string;
+  label: string;
+  rate: number;
+  quality?: string | null;
+};
 
+type VacancyApiResponse = {
+  metroCode: string;
+  seasons: string[];
+  points: VacancyApiPoint[];
+};
 
+type VacancyChartDatum = {
+  isoDate: string;
+  displayLabel: string;
+  label: string;
+  vacancyRate: number;
+  season: string;
+  quality: string | null;
+};
 
+type VacancyCityPhoto = {
+  imageUrl: string;
+  photographer: string;
+  photographerUrl?: string;
+  sourceUrl?: string;
+  altText?: string;
+};
 
+const fallbackVacancyPhoto: VacancyCityPhoto = {
+  imageUrl: vacancyFallbackImage,
+  photographer: 'Pixabay',
+  photographerUrl: 'https://www.pexels.com/@pixabay',
+  sourceUrl: 'https://www.pexels.com/photo/architecture-bay-bridge-buildings-417173/',
+  altText: 'City skyline at dusk',
+};
 
+type PexelsPhotoSrc = {
+  original?: string;
+  large?: string;
+  large2x?: string;
+  landscape?: string;
+  medium?: string;
+};
 
+type PexelsPhoto = {
+  id?: number;
+  src?: PexelsPhotoSrc;
+  alt?: string;
+  photographer?: string;
+  photographer_url?: string;
+  url?: string;
+};
 
-
-
+type PexelsSearchResponse = {
+  photos?: PexelsPhoto[];
+};
 
 const parseCsvLine = (line: string): string[] => {
   const sanitizedLine = line.replace(/^\uFEFF/, '');
@@ -252,7 +311,25 @@ const formatScenarioTimestamp = (isoString: string): string => {
   return `${month}-${day}-${year} ${hours}:${minutes}${period}`;
 };
 
-
+const parseScenarioFromApi = (raw: unknown): SavedScenario | null => {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const candidate = raw as Record<string, unknown>;
+  const { id, name, createdAt, assumptions } = candidate;
+  if (typeof id !== 'string' || typeof name !== 'string' || typeof createdAt !== 'string') {
+    return null;
+  }
+  if (!assumptions || typeof assumptions !== 'object') {
+    return null;
+  }
+  return {
+    id,
+    name,
+    createdAt,
+    assumptions: deepClone(assumptions as Assumptions),
+  };
+};
 
 type MetricTooltip = {
   title: string;
@@ -412,23 +489,46 @@ const ScenarioComparisonTooltip = ({ active, payload }: ScenarioComparisonToolti
   );
 };
 
+type VacancyTooltipProps = TooltipProps<number, string> & {
+  payload?: Array<{ payload: VacancyChartDatum }>;
+};
 
+
+
+
+const VacancyTooltip = ({ active, payload }: VacancyTooltipProps) => {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const item = payload[0].payload as VacancyChartDatum;
+
+  return (
+    <div className="chart-tooltip">
+      <strong>{item.label || item.displayLabel}</strong>
+      <span>Vacancy Rate: {formatVacancyRate(item.vacancyRate)}</span>
+      {item.quality ? <span>Quality: {item.quality}</span> : null}
+    </div>
+  );
+};
 
 function App() {
   const [assumptions, setAssumptions] = useState<Assumptions>(() => loadBaselineAssumptions());
   const [percentExpenseValues, setPercentExpenseValues] = useState<Record<string, number>>(() =>
     derivePercentExpenseValues(baselineAssumptions),
   );
-  const [scenarios, setScenarios] = useState<SavedScenario[]>(initialScenarios as SavedScenario[]);
-
+  const [scenarios, setScenarios] = useState<SavedScenario[]>([]);
+  const [isLoadingScenarios, setIsLoadingScenarios] = useState(false);
   const [isSavingScenario, setIsSavingScenario] = useState(false);
   const [scenarioName, setScenarioName] = useState('');
   const [scenarioError, setScenarioError] = useState<string | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const [selectedMarketCity, setSelectedMarketCity] = useState<string>(marketRentData[0]?.city ?? '');
   const [selectedVacancyMetro, setSelectedVacancyMetro] = useState<string>(defaultVacancyCity?.geographyId ?? '');
-
-
+  const [vacancySeriesByMetro, setVacancySeriesByMetro] = useState<Record<string, VacancyApiPoint[]>>({});
+  const [vacancyLoading, setVacancyLoading] = useState(false);
+  const [vacancyError, setVacancyError] = useState<string | null>(null);
+  const [vacancyCityPhotos, setVacancyCityPhotos] = useState<Record<string, VacancyCityPhoto | null>>({});
   const [newExpenseLabel, setNewExpenseLabel] = useState('');
   const [newExpenseValue, setNewExpenseValue] = useState('');
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
@@ -480,9 +580,55 @@ function App() {
   const currentMarketRentCity = selectedMarketCity || marketRentData[0]?.city || '';
   const selectedMarketRentRow = marketRentData.find((row) => row.city === currentMarketRentCity);
   const selectedVacancyCity = cmhcCities.find((city) => city.geographyId === selectedVacancyMetro);
+const hasVacancyPhotoEntry =
+  Boolean(selectedVacancyMetro) && Object.prototype.hasOwnProperty.call(vacancyCityPhotos, selectedVacancyMetro);
+const vacancyPhoto =
+  hasVacancyPhotoEntry && selectedVacancyMetro ? vacancyCityPhotos[selectedVacancyMetro] ?? null : null;
+const vacancySummaryPhoto = vacancyPhoto ?? fallbackVacancyPhoto;
+  const vacancyChartData = useMemo(() => {
+    const activeSeries = vacancySeriesByMetro[selectedVacancyMetro] ?? [];
+    if (!activeSeries.length) {
+      return [] as VacancyChartDatum[];
+    }
+    const normalized = activeSeries
+      .map((point) => {
+        const parsedDate = new Date(point.date);
+        return { point, timestamp: parsedDate.getTime() };
+      })
+      .filter(({ timestamp }) => !Number.isNaN(timestamp))
+      .sort((a, b) => a.timestamp - b.timestamp);
 
+    if (!normalized.length) {
+      return [] as VacancyChartDatum[];
+    }
 
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - 5);
+    const cutoffTimestamp = cutoff.getTime();
+    const filtered = normalized.filter(({ timestamp }) => timestamp >= cutoffTimestamp);
+    const target = filtered.length ? filtered : normalized.slice(-20);
 
+    return target.map(({ point }) => ({
+      isoDate: point.date,
+      displayLabel: `${point.year} Q${point.quarter}`,
+      label: point.label,
+      vacancyRate: point.rate,
+      season: point.season,
+      quality: point.quality ?? null,
+    }));
+  }, [selectedVacancyMetro, vacancySeriesByMetro]);
+  const latestVacancyPoint = vacancyChartData[vacancyChartData.length - 1] ?? null;
+const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
+  if (!vacancySummaryPhoto) {
+    return undefined;
+  }
+  return {
+    backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 64, 175, 0.4)), url(${vacancySummaryPhoto.imageUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  };
+}, [vacancySummaryPhoto]);
   const maggiMetadata = useMemo(() => {
     const resolvedLocation = selectedVacancyCity?.name ?? currentMarketRentCity ?? null;
     return {
@@ -564,11 +710,170 @@ function App() {
     </div>
   );
 
+  useEffect(() => {
+    let isMounted = true;
+    const fetchScenarios = async () => {
+      setIsLoadingScenarios(true);
+      try {
+        const response = await fetch(buildScenarioUrl('/api/scenarios'));
+        const payload = (await response.json().catch(() => ({}))) as { scenarios?: unknown; message?: string };
+        if (!response.ok) {
+          throw new Error(payload?.message ?? 'Unable to load scenarios');
+        }
+        const parsedScenarios: SavedScenario[] = Array.isArray(payload.scenarios)
+          ? payload.scenarios
+              .map((entry: unknown) => parseScenarioFromApi(entry))
+              .filter((entry): entry is SavedScenario => entry != null)
+          : [];
+        if (isMounted) {
+          setScenarios(parsedScenarios);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setScenarioError(error instanceof Error ? error.message : 'Unable to load scenarios');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingScenarios(false);
+        }
+      }
+    };
 
+    fetchScenarios();
 
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
+  useEffect(() => {
+    if (!selectedVacancyMetro || vacancySeriesByMetro[selectedVacancyMetro]) {
+      return;
+    }
+    const controller = new AbortController();
+    let canceled = false;
+    const loadVacancyData = async () => {
+      setVacancyLoading(true);
+      setVacancyError(null);
+      try {
+        const response = await fetch(
+          buildScenarioUrl(`/api/cmhc/vacancy?metroCode=${encodeURIComponent(selectedVacancyMetro)}`),
+          { signal: controller.signal },
+        );
+        const payload = (await response.json().catch(() => ({}))) as VacancyApiResponse & { message?: string };
+        if (!response.ok) {
+          throw new Error(payload?.message ?? 'Unable to load vacancy data');
+        }
+        const series = Array.isArray(payload.points)
+          ? payload.points.filter(
+              (entry): entry is VacancyApiPoint =>
+                Boolean(entry?.date) && typeof entry?.rate === 'number' && Number.isFinite(entry.rate),
+            )
+          : [];
+        if (!canceled) {
+          setVacancySeriesByMetro((prev) => ({ ...prev, [selectedVacancyMetro]: series }));
+        }
+      } catch (error) {
+        if (canceled || (error instanceof DOMException && error.name === 'AbortError')) {
+          return;
+        }
+        setVacancyError(error instanceof Error ? error.message : 'Unable to load vacancy data');
+      } finally {
+        if (!canceled) {
+          setVacancyLoading(false);
+        }
+      }
+    };
 
+    loadVacancyData();
 
+    return () => {
+      canceled = true;
+      controller.abort();
+    };
+  }, [selectedVacancyMetro, vacancySeriesByMetro]);
+
+  useEffect(() => {
+    if (!pexelsApiKey || !selectedVacancyCity || !selectedVacancyMetro || hasVacancyPhotoEntry) {
+      return;
+    }
+
+    const controller = new AbortController();
+    let isActive = true;
+
+    const fetchCityPhoto = async () => {
+      try {
+        const searchQueries = [
+          `${selectedVacancyCity.name} skyline`,
+          `${selectedVacancyCity.name} city skyline`,
+          `${selectedVacancyCity.name} landscape`,
+        ];
+        let resolvedPhoto: VacancyCityPhoto | null = null;
+
+        for (const query of searchQueries) {
+          const url = new URL('https://api.pexels.com/v1/search');
+          url.searchParams.set('query', query);
+          url.searchParams.set('orientation', 'landscape');
+          url.searchParams.set('per_page', '1');
+          url.searchParams.set('size', 'large');
+
+          const response = await fetch(url.toString(), {
+            headers: {
+              Authorization: pexelsApiKey,
+            },
+            signal: controller.signal,
+          });
+          const payload = (await response.json().catch(() => ({}))) as PexelsSearchResponse & { error?: string };
+          if (!response.ok) {
+            throw new Error(payload?.error ?? 'Unable to load skyline photo');
+          }
+
+          const [photo] = Array.isArray(payload.photos) ? payload.photos : [];
+          const src = photo?.src;
+          if (!src) {
+            continue;
+          }
+          const imageUrl = src.landscape ?? src.large2x ?? src.large ?? src.original ?? src.medium ?? null;
+          if (!imageUrl) {
+            continue;
+          }
+          resolvedPhoto = {
+            imageUrl,
+            photographer: photo?.photographer || 'Pexels contributor',
+            photographerUrl: photo?.photographer_url || photo?.url || undefined,
+            sourceUrl: photo?.url ?? undefined,
+            altText: photo?.alt ?? `${selectedVacancyCity.name} skyline`,
+          };
+          break;
+        }
+
+        if (!isActive) {
+          return;
+        }
+
+        setVacancyCityPhotos((prev) => ({
+          ...prev,
+          [selectedVacancyMetro]: resolvedPhoto,
+        }));
+      } catch (error) {
+        if (!isActive || (error instanceof DOMException && error.name === 'AbortError')) {
+          return;
+        }
+        setVacancyCityPhotos((prev) => ({
+          ...prev,
+          [selectedVacancyMetro]: null,
+        }));
+        console.error('Unable to load skyline image from Pexels', error);
+      }
+    };
+
+    fetchCityPhoto();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [hasVacancyPhotoEntry, pexelsApiKey, selectedVacancyCity, selectedVacancyMetro]);
 
   useEffect(() => {
     if (!Object.keys(percentExpenseValues).length || metrics.grossRentAnnual <= 0) {
@@ -820,7 +1125,7 @@ function App() {
     }
   };
 
-  const handleSaveScenario = (): void => {
+  const handleSaveScenario = async (): Promise<void> => {
     const trimmedName = scenarioName.trim();
     if (!trimmedName) {
       setScenarioError('Please provide a scenario name.');
@@ -829,15 +1134,24 @@ function App() {
     setIsSavingScenario(true);
     setScenarioError(null);
     try {
-      const newScenario: SavedScenario = {
-        id: crypto.randomUUID(),
-        name: trimmedName,
-        createdAt: new Date().toISOString(),
-        assumptions: deepClone(assumptions),
-      };
-      setScenarios((prev) => [newScenario, ...prev.filter((scenario) => scenario.id !== newScenario.id)]);
+      const response = await fetch(buildScenarioUrl('/api/scenarios'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: trimmedName, assumptions: deepClone(assumptions) }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { scenario?: unknown; message?: string };
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Unable to save scenario');
+      }
+      const savedScenario = parseScenarioFromApi(payload.scenario);
+      if (!savedScenario) {
+        throw new Error('Received malformed scenario payload');
+      }
+      setScenarios((prev) => [savedScenario, ...prev.filter((scenario) => scenario.id !== savedScenario.id)]);
       setScenarioName('');
-      setActiveScenarioId(newScenario.id);
+      setActiveScenarioId(savedScenario.id);
     } catch (error) {
       setScenarioError(error instanceof Error ? error.message : 'Unable to save scenario');
     } finally {
@@ -853,10 +1167,20 @@ function App() {
     setScenarioError(null);
   };
 
-  const handleDeleteScenario = (scenarioId: string): void => {
-    setScenarios((prev) => prev.filter((scenario) => scenario.id !== scenarioId));
-    if (activeScenarioId === scenarioId) {
-      setActiveScenarioId(null);
+  const handleDeleteScenario = async (scenarioId: string): Promise<void> => {
+    try {
+      setScenarioError(null);
+      const response = await fetch(buildScenarioUrl(`/api/scenarios/${scenarioId}`), { method: 'DELETE' });
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Unable to delete scenario');
+      }
+      setScenarios((prev) => prev.filter((scenario) => scenario.id !== scenarioId));
+      if (activeScenarioId === scenarioId) {
+        setActiveScenarioId(null);
+      }
+    } catch (error) {
+      setScenarioError(error instanceof Error ? error.message : 'Unable to delete scenario');
     }
   };
 
@@ -999,7 +1323,9 @@ function App() {
           </form>
           {scenarioError && <p className="scenario-error">{scenarioError}</p>}
           <div className="scenario-picker">
-            {scenarios.length === 0 ? (
+            {isLoadingScenarios ? (
+              <p className="scenario-muted">Loading scenarios...</p>
+            ) : scenarios.length === 0 ? (
               <p className="scenario-muted">No saved scenarios yet.</p>
             ) : (
               <>
@@ -1574,21 +1900,80 @@ function App() {
                 </select>
               </label>
             </div>
-            {selectedVacancyCity ? (
+            {latestVacancyPoint && selectedVacancyCity ? (
               <div className="vacancy-summary-wrapper">
-                <div className="vacancy-summary has-photo">
+                <div className="vacancy-summary has-photo" style={vacancySummaryStyle}>
                   <div className="vacancy-summary-header">
                     <p className="vacancy-summary-location">
                       {selectedVacancyCity.name}
+                      <span>Latest ({latestVacancyPoint.displayLabel})</span>
                     </p>
-
+                    <p className="vacancy-summary-value">
+                      {formatVacancyRate(latestVacancyPoint.vacancyRate)}
+                    </p>
                   </div>
-
+                  {vacancySummaryPhoto?.photographer ? (
+                    <p className="vacancy-photo-credit">
+                      Photo: {vacancySummaryPhoto.photographer} /{' '}
+                      {vacancySummaryPhoto.photographerUrl ? (
+                        <a href={vacancySummaryPhoto.photographerUrl} target="_blank" rel="noreferrer">
+                          Pexels
+                        </a>
+                      ) : (
+                        'Pexels'
+                      )}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}
             <div className="vacancy-chart-wrapper">
-              
+              {vacancyError ? (
+                <p className="vacancy-message error">{vacancyError}</p>
+              ) : vacancyLoading && !vacancyChartData.length ? (
+                <p className="vacancy-message">Loading CMHC vacancy data…</p>
+              ) : vacancyChartData.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={vacancyChartData}
+                    margin={{
+                      top: 10,
+                      right: 12,
+                      left: 0,
+                      bottom: 6,
+                    }}
+                  >
+                    <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
+                    <XAxis dataKey="displayLabel" tick={{ fontSize: 12, fill: '#475569' }} interval="preserveEnd" />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: '#475569' }}
+                      tickFormatter={(value) =>
+                        typeof value === 'number' ? `${vacancyNumberFormatter.format(value)}%` : value
+                      }
+                      width={56}
+                      domain={[
+                        0,
+                        (dataMax) =>
+                          typeof dataMax === 'number' && Number.isFinite(dataMax)
+                            ? Math.max(Math.ceil(dataMax + 1), 5)
+                            : 5,
+                      ]}
+                    />
+                    <Tooltip content={<VacancyTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="vacancyRate"
+                      stroke="#2563eb"
+                      strokeWidth={3}
+                      dot={{ r: 2 }}
+                      activeDot={{ r: 4 }}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="vacancy-message">Vacancy data is unavailable for this city.</p>
+              )}
             </div>
             <p className="vacancy-source">Source: CMHC Rental Market Survey.</p>
           </div>

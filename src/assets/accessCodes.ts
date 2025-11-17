@@ -1,6 +1,0 @@
-export const HASHED_ACCESS_CODES: string[] = [
-  "$2b$10$OAldCb46iyq6ZRJCALRcU.8LueZuQokEuN6Q1RVivPFP2I1FEIUmq",
-  "$2b$10$QqLWh0xoqtbvFCDaBpm0tema/RxHmHQIgeLOfnPv4Qx.JHRhS9W.O",
-  "$2b$10$/EZft4fZ3l6/vhSUS66q2Oh0o.Zppq5.ksjbYNFghKLs445k3k6Dm",
-  "$2b$10$gfw/DWOxwX5obOwp2Iq7SeA7LOGkv8Z.o9v/XJbF/Rapzt5/ZOCpu",
-];
