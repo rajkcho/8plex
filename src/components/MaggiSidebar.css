@@ -10,7 +10,7 @@
 }
 
 .maggi-launcher__image {
-  width: 120px;
+  width: 144px; /* Increased by 20% from 120px */
   height: auto;
   display: block;
   pointer-events: none;

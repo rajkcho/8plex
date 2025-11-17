@@ -746,7 +746,7 @@ input[type='number'] {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-left: 2.5rem; /* Moved further to the right */
+  margin-left: 1.5rem; /* Reduced margin-left */
   padding-left: 2.5rem; /* Increased padding-left */
   border-left: 1px solid rgba(15, 23, 42, 0.08);
   margin-top: 0;
