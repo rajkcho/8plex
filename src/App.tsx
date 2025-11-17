@@ -1634,12 +1634,9 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
               <h2>Operating Expenses</h2>
               <p>Control total opex or fine-tune individual categories.</p>
             </div>
-            <div className="expense-row total">
-              <div>
-                <p>Total Opex</p>
-                <h3>{currencyFormatter.format(totalOperatingExpenses)}</h3>
-              </div>
-              <p className="muted">Per year</p>
+            <div className="opex-kpi-card">
+              <p className="metric-label">Total Opex</p>
+              <p className="metric-value">{currencyFormatter.format(totalOperatingExpenses)}</p>
             </div>
             <div className="expense-list">
               {operatingExpenseEntries.map(([label, value]) => {
@@ -1750,7 +1747,6 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
         <div className="chart-card">
           <div className="chart-header">
             <h3>Scenario Net Cash Flow</h3>
-            <p>Compare annual net cash flow for saved cases.</p>
           </div>
           {scenarioComparisonData.length === 0 ? (
             <p className="chart-empty">Save scenarios to compare their net cash flow.</p>
