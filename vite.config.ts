@@ -8,9 +8,10 @@ export default defineConfig({
     outDir: 'docs',
   },
   server: {
+    port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:4001',
         changeOrigin: true,
       },
     },
@@ -18,7 +19,7 @@ export default defineConfig({
   preview: {
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:4001',
         changeOrigin: true,
       },
     },

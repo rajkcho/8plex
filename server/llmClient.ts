@@ -1,6 +1,6 @@
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | any[];
 };
 
 const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
@@ -9,24 +9,30 @@ const normalizeBaseUrl = (url: string): string => url.replace(/\/+$/, '');
 
 export const chatCompletion = async (
   messages: ChatMessage[],
-  temperature = 0.1,
-  maxTokens = 800,
+  options: {
+    temperature?: number;
+    maxTokens?: number;
+    model?: string;
+    baseURL?: string;
+  } = {},
 ): Promise<string> => {
   if (!messages.length) {
     throw new Error('At least one message is required');
   }
+
+  const { temperature = 0.1, maxTokens = 800 } = options;
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY is not configured');
   }
 
-  const model = process.env.OPENROUTER_MODEL;
+  const model = options.model ?? process.env.OPENROUTER_MODEL;
   if (!model) {
     throw new Error('OPENROUTER_MODEL is not configured');
   }
 
-  const baseUrl = process.env.OPENROUTER_BASE_URL ?? OPENROUTER_DEFAULT_BASE_URL;
+  const baseUrl = options.baseURL ?? process.env.OPENROUTER_BASE_URL ?? OPENROUTER_DEFAULT_BASE_URL;
   const endpoint = `${normalizeBaseUrl(baseUrl)}/chat/completions`;
 
   const response = await fetch(endpoint, {

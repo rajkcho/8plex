@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import type { OcrResult } from '../services/projectOcr.ts';
 import './MaggiSidebar.css';
 import maggiIcon from '../../maggi.png';
 import maggiButtonImage from '../../maggib.png';
@@ -19,6 +20,7 @@ type MaggiSidebarMetadata = {
 type MaggiSidebarProps = {
   locationHint?: string | null;
   metadata?: MaggiSidebarMetadata;
+  ocrResult?: OcrResult | null;
 };
 
 const scenarioApiBaseUrl = import.meta.env.VITE_SCENARIO_API_URL ?? '';
@@ -49,7 +51,7 @@ const initialMessage: MaggiMessage = {
 
 const chatEndpoints = ['/api/maggi/chat', '/api/marvin/chat'];
 
-const MaggiSidebar = ({ locationHint, metadata }: MaggiSidebarProps) => {
+const MaggiSidebar = ({ locationHint, metadata, ocrResult }: MaggiSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MaggiMessage[]>([initialMessage]);
@@ -58,6 +60,12 @@ const MaggiSidebar = ({ locationHint, metadata }: MaggiSidebarProps) => {
   const [error, setError] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ocrResult) {
+      setIsOpen(true);
+    }
+  }, [ocrResult]);
 
   useEffect(() => {
     if (isOpen) {
@@ -204,6 +212,20 @@ const MaggiSidebar = ({ locationHint, metadata }: MaggiSidebarProps) => {
           </button>
         </header>
         <div className="maggi-sidebar__body">
+          {ocrResult && (
+            <div className="ocr-results">
+              <h3>Extracted Project Details</h3>
+              <p>
+                <strong>Cash Flow After Debt:</strong> {ocrResult.cash_flow_after_debt}
+              </p>
+              <p>
+                <strong>Cash on Cash Return:</strong> {ocrResult.cash_on_cash}
+              </p>
+              <p>
+                <strong>DSCR:</strong> {ocrResult.dscr}
+              </p>
+            </div>
+          )}
           <div className="maggi-messages" ref={scrollContainerRef}>
             {messages.map((message) => (
               <div key={message.id} className={`maggi-message maggi-message--${message.role}`}>

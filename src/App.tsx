@@ -23,6 +23,7 @@ import {
 import type { TooltipProps } from 'recharts';
 import rentsCsv from '../rentsv2.csv?raw';
 import cmhcCmaList from './assets/cmhc-cmas.json';
+import { uploadProjectScreenshot, type OcrResult } from './services/projectOcr.ts';
 import vacancyFallbackImage from './assets/vacancy-fallback.jpg';
 
 const baselineAssumptions = loadBaselineAssumptions();
@@ -534,6 +535,37 @@ function App() {
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
   const [rentStepPercent, setRentStepPercent] = useState(5);
   const [interestStepBps, setInterestStepBps] = useState(5);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setUploadStatus('Uploading...');
+    try {
+      const result = await uploadProjectScreenshot(file);
+      setOcrResult(result);
+      setUploadStatus('Successfully uploaded');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setUploadStatus(`Error: ${message}`);
+    }
+  };
+
+  /*
+  const applyProjectOcrResults = (result: OcrResult) => {
+    // TODO: Implement goal seek or display results to user
+    console.log('OCR Result:', result);
+  };
+  */
 
   const brokerFeeSliderMax = Math.max(assumptions.brokerFee || 0, 250_000);
   const contingencySliderMax = Math.max((assumptions.contingencyPct ?? 0) * 100, 20);
@@ -1274,8 +1306,23 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
             <div className="header-branding">
               <img src={headerLogo} alt="MLI Calc" className="app-logo" />
             </div>
-            <div className="baseline-chip">
-              Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
+            <div className="header-controls">
+              <div className="baseline-chip">
+                Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
+              </div>
+              <div className="project-upload">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
+                <button type="button" className="upload-button" onClick={handleUploadClick}>
+                  Upload Project Details
+                </button>
+                {uploadStatus && <p className="upload-status">{uploadStatus}</p>}
+              </div>
             </div>
           </div>
         </header>
@@ -1980,7 +2027,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
         </div>
         </section>
       </div>
-      <MaggiSidebar locationHint={maggiMetadata.location} metadata={maggiMetadata} />
+      <MaggiSidebar locationHint={maggiMetadata.location} metadata={maggiMetadata} ocrResult={ocrResult} />
     </>
   );
 }

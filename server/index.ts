@@ -6,10 +6,11 @@ import { randomUUID } from 'node:crypto';
 import zlib from 'node:zlib';
 import unzipper from 'unzipper';
 import type { File as ZipFileEntry } from 'unzipper';
+import Busboy from 'busboy';
 import { createScenarioStore } from './scenarioStore.ts';
 import { chatCompletion, type ChatMessage } from './llmClient.ts';
 
-const PORT = Number(process.env.PORT ?? 4000);
+const PORT = Number(process.env.PORT ?? 4001);
 const store = createScenarioStore();
 const CMHC_ENDPOINT = 'https://www03.cmhc-schl.gc.ca/hmip-pimh/en/TableMapChart/ExportTable';
 const VACANCY_CACHE_MS = 1000 * 60 * 60; // 1 hour
@@ -1003,92 +1004,150 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
     return;
   }
 
-  const isMaggiChatRoute = requestUrl.startsWith('/api/maggi/chat') || requestUrl.startsWith('/api/marvin/chat');
-  if (isMaggiChatRoute) {
-    if (method !== 'POST') {
-      sendJson(res, 405, { message: 'Method not allowed' });
-      return;
-    }
-
-    try {
-      const body = (await parseRequestBody(req)) as MaggiChatRequestBody;
-      const message = typeof body.message === 'string' ? body.message.trim() : '';
-      if (!message) {
-        sendJson(res, 400, { message: 'message is required' });
+    const isMaggiChatRoute = requestUrl.startsWith('/api/maggi/chat') || requestUrl.startsWith('/api/marvin/chat');
+    if (isMaggiChatRoute) {
+      if (method !== 'POST') {
+        sendJson(res, 405, { message: 'Method not allowed' });
         return;
       }
-
-      const metadata = normalizeMaggiMetadata(body.metadata);
-      const providedConversationId =
-        typeof body.conversation_id === 'string' ? body.conversation_id.trim() : undefined;
-      const conversationId = providedConversationId && providedConversationId.length ? providedConversationId : randomUUID();
-
-      const baselineHistory =
-        maggiConversations.get(conversationId) ??
-        [
-          {
-            role: 'system',
-            content: MAGGI_SYSTEM_PROMPT,
-          } satisfies ChatMessage,
-        ];
-
-      const contextSegments: string[] = [];
-      const [cmhcSegment, statscanSegment] = await Promise.all([
-        buildCmhcVacancyContext(metadata),
-        buildStatscanContext(metadata),
-      ]);
-      if (cmhcSegment) {
-        contextSegments.push(cmhcSegment);
-      }
-      if (statscanSegment) {
-        contextSegments.push(statscanSegment);
-      }
-
-      const mliSummary = get_mli_select_summary();
-      contextSegments.push(
-        `MLI Select summary (${mliSummary.source}): leverage tiers ${mliSummary.tiers
-          .map((tier) => `${tier.leverage} (${tier.requirement})`)
-          .join('; ')} with insurance premiums roughly ${mliSummary.insurancePremiumRangePercent}. ${mliSummary.sustainabilityNotes}`,
-      );
-
-      const contextMessage =
-        contextSegments.length > 0
-          ? ({
+  
+      try {
+        const body = (await parseRequestBody(req)) as MaggiChatRequestBody;
+        const message = typeof body.message === 'string' ? body.message.trim() : '';
+        if (!message) {
+          sendJson(res, 400, { message: 'message is required' });
+          return;
+        }
+  
+        const metadata = normalizeMaggiMetadata(body.metadata);
+        const providedConversationId =
+          typeof body.conversation_id === 'string' ? body.conversation_id.trim() : undefined;
+        const conversationId = providedConversationId && providedConversationId.length ? providedConversationId : randomUUID();
+  
+        const baselineHistory =
+          maggiConversations.get(conversationId) ??
+          [
+            {
               role: 'system',
-              content: `Reference data (placeholders, advise users to confirm with professionals):\n- ${contextSegments.join('\n- ')}`,
-            } satisfies ChatMessage)
-          : null;
-
-      const userMessage: ChatMessage = {
-        role: 'user',
-        content: message,
-      };
-
-      const requestMessages = contextMessage
-        ? [...baselineHistory, contextMessage, userMessage]
-        : [...baselineHistory, userMessage];
-
-      const reply = await chatCompletion(requestMessages);
-      const assistantMessage: ChatMessage = {
-        role: 'assistant',
-        content: reply,
-      };
-
-      const updatedHistory = trimMaggiHistory([...baselineHistory, userMessage, assistantMessage]);
-      maggiConversations.set(conversationId, updatedHistory);
-
-      sendJson(res, 200, {
-        reply,
-        conversation_id: conversationId,
-      });
-    } catch (error) {
-      console.error('Maggi chat error:', error);
-      sendJson(res, 500, { message: 'Unable to process Maggi chat request' });
+              content: MAGGI_SYSTEM_PROMPT,
+            } satisfies ChatMessage,
+          ];
+  
+        const contextSegments: string[] = [];
+        const [cmhcSegment, statscanSegment] = await Promise.all([
+          buildCmhcVacancyContext(metadata),
+          buildStatscanContext(metadata),
+        ]);
+        if (cmhcSegment) {
+          contextSegments.push(cmhcSegment);
+        }
+        if (statscanSegment) {
+          contextSegments.push(statscanSegment);
+        }
+  
+        const mliSummary = get_mli_select_summary();
+        contextSegments.push(
+          `MLI Select summary (${mliSummary.source}): leverage tiers ${mliSummary.tiers
+            .map((tier) => `${tier.leverage} (${tier.requirement})`)
+            .join('; ')} with insurance premiums roughly ${mliSummary.insurancePremiumRangePercent}. ${mliSummary.sustainabilityNotes}`,
+        );
+  
+        const contextMessage =
+          contextSegments.length > 0
+            ? ({
+                role: 'system',
+                content: `Reference data (placeholders, advise users to confirm with professionals):\n- ${contextSegments.join('\n- ')}`,
+              } satisfies ChatMessage)
+            : null;
+  
+        const userMessage: ChatMessage = {
+          role: 'user',
+          content: message,
+        };
+  
+        const requestMessages = contextMessage
+          ? [...baselineHistory, contextMessage, userMessage]
+          : [...baselineHistory, userMessage];
+  
+        const reply = await chatCompletion(requestMessages);
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: reply,
+        };
+  
+        const updatedHistory = trimMaggiHistory([...baselineHistory, userMessage, assistantMessage]);
+        maggiConversations.set(conversationId, updatedHistory);
+  
+        sendJson(res, 200, {
+          reply,
+          conversation_id: conversationId,
+        });
+      } catch (error) {
+        console.error('Maggi chat error:', error);
+        sendJson(res, 500, { message: 'Unable to process Maggi chat request' });
+      }
+      return;
     }
-    return;
-  }
-
-  if (requestUrl.startsWith('/api/scenarios')) {
+  
+    if (requestUrl.startsWith('/api/ocr/parse')) {
+      if (method !== 'POST') {
+        sendJson(res, 405, { message: 'Method not allowed' });
+        return;
+      }
+      const busboy = Busboy({ headers: req.headers });
+      let fileBuffer: Buffer | null = null;
+  
+      busboy.on('file', (_fieldName: string, fileStream: NodeJS.ReadableStream) => {
+        const chunks: Buffer[] = [];
+        fileStream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        fileStream.on('end', () => {
+          fileBuffer = Buffer.concat(chunks);
+        });
+      });
+  
+      busboy.on('finish', async () => {
+        if (!fileBuffer) {
+          sendJson(res, 400, { message: 'No file uploaded' });
+          return;
+        }
+  
+        const base64Image = fileBuffer.toString('base64');
+        const ocrPrompt = `You are an expert real estate analyst. Read the provided real estate proforma screenshot and return a JSON object with keys "cash_flow_after_debt", "cash_on_cash", and "dscr". Use the "Year 1" column where applicable. Sanitize the values to be valid numbers (e.g., remove currency symbols, commas, and percentage signs). The final JSON should only contain the keys specified.`;
+  
+        try {
+          const visionModel = process.env.OPENROUTER_VISION_MODEL ?? 'anthropic/claude-3-haiku';
+          const visionBaseUrl = process.env.OPENROUTER_VISION_BASE_URL;
+  
+                  const response = await chatCompletion(
+                    [
+                      {
+                        role: 'user',
+                        content: [
+                          { type: 'text', text: ocrPrompt },
+                          {
+                            type: 'image_url',
+                            image_url: {
+                              url: `data:image/png;base64,${base64Image}`,
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                    { model: visionModel,
+                     baseURL: visionBaseUrl }
+                  );  
+          const jsonResponse = JSON.parse(response);
+          sendJson(res, 200, jsonResponse);
+        } catch (error) {
+          console.error('OCR request failed:', error);
+          sendJson(res, 500, { message: 'Failed to process image with vision model.' });
+        }
+      });
+  
+      req.pipe(busboy);
+      return;
+    }
+    if (requestUrl.startsWith('/api/scenarios')) {
     const url = new URL(requestUrl, `http://${req.headers.host ?? 'localhost'}`);
     if (method === 'GET' && url.pathname === '/api/scenarios') {
       try {

@@ -1,5 +1,5 @@
 
-import React from 'react';
+
 import './SuccessAnimation.css';
 
 const SuccessAnimation = () => {

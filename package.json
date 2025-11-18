@@ -15,7 +15,9 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",
     "@types/bcrypt": "^6.0.0",
+    "@types/busboy": "^1.5.4",
     "bcrypt": "^6.0.0",
+    "busboy": "^1.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.4.1",
