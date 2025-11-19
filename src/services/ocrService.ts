@@ -18,6 +18,7 @@ export type OcrResult = {
   amortization_years?: number;
   total_operating_expenses?: number;
   expenses_breakdown?: Record<string, number>;
+  pet_income_details?: { count: number; fee: number };
   unit_mix?: OcrUnit[];
 };
 

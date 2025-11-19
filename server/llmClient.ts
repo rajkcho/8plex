@@ -102,6 +102,12 @@ Return a strictly valid JSON object with these keys:
    - "monthly_rent": Monthly rent per unit (numeric).
    - "bedrooms": Number of bedrooms (integer, 0 for bachelor).
    - "usage": Usage type (e.g., "Residential", "Commercial", "Parking"). Default to "Residential" if not specified.
+   
+   For "Pet" income, look for "Pet" in the income section. Extract:
+   - "pet_count": Number of pet units/fees.
+   - "pet_fee": Monthly fee per pet.
+   
+13. "pet_income_details": { "count": integer, "fee": numeric } if found.
 
 Sanitize all values. Remove currency symbols, commas, and percentage signs. Ensure decimals are used for percentages. If a value is not found, use null (or 0 for broker_fee).`,
         },

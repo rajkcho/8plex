@@ -132,20 +132,24 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
   // However, the request says "Cap Rate should be calculated based on Total Opex (Year 1)".
   
   // Let's calculate both totals:
-  const totalOpexOngoing = sumOperatingExpenses(operatingExpenses);
-  const totalOpexYear1 = totalOpexOngoing - managementAmount;
+  const totalOpexOngoing = sumOperatingExpenses(operatingExpenses) - managementAmount; // Remove salaries from On-going per user request "Total Opex (On-going) calculation should not include Salaries"
+  const totalOpexYear1 = totalOpexOngoing; // If salaries are removed from ongoing, and Year 1 also excludes them, they might be the same now unless other items differ.
 
-  // User: "Cap Rate should be calculated based on Total Opex (Year 1)"
-  // So NOI for Cap Rate = Income - OpexYear1
+  // Re-reading requirement: "Total Opex (On-going) calculation should not include Salaries."
+  // Previous requirement: "Change 'Total Opex' to 'Total Opex (Year 1)', which would not include Management & Salaries."
+  // It seems BOTH now exclude Salaries? Or is "Salaries" distinct from "Management"?
+  // Assuming "Management & Salaries" is the single line item to exclude from BOTH metrics based on "Total Opex (On-going) calculation should not include Salaries".
+
+  // User: "On Static KPI panel, NOI be based on Total Opex (Year 1)."
   const noiYear1 = totalIncomeAnnual - totalOpexYear1;
-  
-  // User: "On Static KPIs, add '(On-going)' to Annual CF, Cash-On-Cash and DSCR."
-  // This implies these specific metrics should use the "On-going" expenses (full load).
-  const noiOngoing = totalIncomeAnnual - totalOpexOngoing;
+  const noiOngoing = totalIncomeAnnual - totalOpexOngoing; // They are the same now if both exclude salaries.
 
   // Logic split:
   // Cap Rate uses noiYear1
-  // Cash Flow, DSCR, Cash-on-Cash use noiOngoing
+  // Cash Flow, DSCR, Cash-on-Cash use noiOngoing (which is now equal to Year 1 if salaries excluded from both)
+
+  // Wait, if On-going excludes salaries, where do salaries go? Maybe they are considered below the line or ignored?
+  // Implementing exactly as requested: "Total Opex (On-going) calculation should not include Salaries"
 
   const equityRequired = (purchasePrice + brokerFee) * depositPct;
   const inferredLoanAmount = assumptions.loanAmount ?? purchasePrice + brokerFee - equityRequired;
@@ -159,9 +163,9 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
   const monthlyDebtService = pmt(monthlyRate, periods, principalWithPremium);
   const debtServiceAnnual = monthlyDebtService * 12;
 
-  const cashFlow = noiOngoing - debtServiceAnnual;
+  const cashFlow = noiYear1 - debtServiceAnnual; // "On Static KPI panel, NOI be based on Total Opex (Year 1)" implies CF/DSCR derived from this NOI
   const cashOnCash = equityRequired > 0 ? cashFlow / equityRequired : 0;
-  const dscr = debtServiceAnnual > 0 ? noiOngoing / debtServiceAnnual : 0;
+  const dscr = debtServiceAnnual > 0 ? noiYear1 / debtServiceAnnual : 0;
   
   // Cap Rate uses Year 1 NOI (Excluding Management) per request
   const capRate = purchasePrice > 0 ? noiYear1 / purchasePrice : 0;

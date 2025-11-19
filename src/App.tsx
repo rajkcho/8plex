@@ -81,7 +81,7 @@ const normalizeExpenseLabel = (label: string): string => sanitizeExpenseLabel(la
 
 const slugifyLabel = (label: string): string => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-const percentageExpenseLabels = new Set(['vacancy and bad debt']);
+const percentageExpenseLabels = new Set<string>(); // Vacancy is now a $ amount
 
 type MarketRentRow = {
   city: string;
@@ -618,9 +618,11 @@ function App() {
               else if (key.includes('util')) label = 'Utilities';
               else if (key.includes('repair') || key.includes('maint')) label = 'Repairs & Maintenance';
               else if (key.includes('vacan')) label = 'Vacancy and Bad Debt';
+              else if (key.toLowerCase() === 'other_costs') label = 'Other Costs'; // Explicit match to avoid duplicates
               else label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
 
               // Remove any existing key that normalizes to the same thing (e.g. "Management & salaries @ 5%")
+              // Also check for "Other Costs" specifically to avoid the 3744 vs 3552 duplicate issue
               const normalizedNew = normalizeExpenseLabel(label);
               const matchingOldKey = existingKeys.find(k => normalizeExpenseLabel(k) === normalizedNew);
               if (matchingOldKey) {
@@ -654,6 +656,21 @@ function App() {
             bedrooms: u.bedrooms || 1,
             usage: u.usage || 'Residential',
           }));
+        }
+        
+        // Pet Income
+        if (result.pet_income_details && typeof result.pet_income_details.count === 'number') {
+           const updatedOtherIncome = prev.otherIncomeItems.map(item => {
+               if (item.name.toLowerCase().includes('pet')) {
+                   return { 
+                       ...item, 
+                       units: result.pet_income_details!.count,
+                       monthlyAmount: result.pet_income_details!.fee ?? item.monthlyAmount
+                   };
+               }
+               return item;
+           });
+           updates.otherIncomeItems = updatedOtherIncome;
         }
         
         return { ...prev, ...updates };
@@ -1868,7 +1885,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                 <p className="metric-label">Total Opex (Year 1)</p>
                 <p className="metric-value">{currencyFormatter.format(metrics.operatingExpensesYear1)}</p>
               </div>
-              <div className="opex-kpi-card">
+              <div className="opex-kpi-card" style={{ marginLeft: '1rem' }}>
                 <p className="metric-label">Total Opex (On-going)</p>
                 <p className="metric-value">{currencyFormatter.format(metrics.operatingExpensesAnnual)}</p>
               </div>
