@@ -78,7 +78,8 @@ export const uploadProjectScreenshot = async (file: File): Promise<OcrResult> =>
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || 'Failed to process image');
+    const detailedMessage = errorData.details ? `${errorData.message}: ${errorData.details}` : (errorData.message || 'Failed to process image');
+    throw new Error(detailedMessage);
   }
 
   const result = await response.json();

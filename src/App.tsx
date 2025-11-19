@@ -536,6 +536,7 @@ function App() {
   const [rentStepPercent, setRentStepPercent] = useState(5);
   const [interestStepBps, setInterestStepBps] = useState(5);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
+  const [uploadErrorMessage, setUploadErrorMessage] = useState<string | null>(null);
   const [metricsOverride, setMetricsOverride] = useState<Partial<FinanceMetrics> | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   
@@ -570,6 +571,7 @@ function App() {
     if (!file) return;
 
     setUploadStatus('scanning');
+    setUploadErrorMessage(null);
     setShowSuccessMessage(false);
     try {
       const result: OcrResult = await uploadProjectScreenshot(file);
@@ -698,6 +700,7 @@ function App() {
     } catch (error) {
       console.error('Upload failed:', error);
       setUploadStatus('error');
+      setUploadErrorMessage(error instanceof Error ? error.message : 'Upload failed');
       // Removed timeout so error message persists (or can add explicit dismiss)
     }
   };
@@ -1455,7 +1458,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                 <input type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
               </label>
               <span style={{ fontSize: '0.8rem', color: uploadStatus === 'error' ? 'red' : uploadStatus === 'success' ? 'green' : '#666' }}>
-                {uploadStatus === 'scanning' ? 'Scanning...' : uploadStatus === 'success' ? 'Success' : uploadStatus === 'error' ? 'Error' : ''}
+                {uploadStatus === 'scanning' ? 'Scanning...' : uploadStatus === 'success' ? 'Success' : uploadStatus === 'error' ? (uploadErrorMessage || 'Error') : ''}
               </span>
               {showSuccessMessage && (
                 <span style={{ fontSize: '0.8rem', color: 'green', marginTop: '2px' }}>
