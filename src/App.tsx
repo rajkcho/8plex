@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties, FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type FinanceMetrics, type UnitAssumption } from './model/financeModel';
+import { uploadProjectScreenshot, type OcrResult } from './services/ocrService';
 import trashIcon from '../trash.png';
 import diskIcon from '../disk.png';
 import headerLogo from '../logo3.png';
@@ -534,11 +535,48 @@ function App() {
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
   const [rentStepPercent, setRentStepPercent] = useState(5);
   const [interestStepBps, setInterestStepBps] = useState(5);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
+  const [metricsOverride, setMetricsOverride] = useState<Partial<FinanceMetrics> | null>(null);
 
   const brokerFeeSliderMax = Math.max(assumptions.brokerFee || 0, 250_000);
   const contingencySliderMax = Math.max((assumptions.contingencyPct ?? 0) * 100, 20);
 
-  const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
+  const metrics = useMemo(() => {
+    const calculated = calculateMetrics(assumptions);
+    if (metricsOverride) {
+      return { ...calculated, ...metricsOverride };
+    }
+    return calculated;
+  }, [assumptions, metricsOverride]);
+
+  // Clear override when assumptions change
+  useEffect(() => {
+    if (metricsOverride) {
+      setMetricsOverride(null);
+    }
+  }, [assumptions]);
+
+  const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadStatus('scanning');
+    try {
+      const result: OcrResult = await uploadProjectScreenshot(file);
+      setMetricsOverride({
+        cashFlow: result.cash_flow_after_debt,
+        cashOnCash: result.cash_on_cash,
+        dscr: result.dscr,
+      });
+      setUploadStatus('success');
+      setTimeout(() => setUploadStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setUploadStatus('error');
+      setTimeout(() => setUploadStatus('idle'), 3000);
+    }
+  };
+
   const { waterfallData, waterfallDomain } = useMemo(() => {
     const data: CashFlowBar[] = [
       { name: 'Gross Rent', value: metrics.grossRentAnnual, color: '#0f172a' },
@@ -1276,6 +1314,15 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
             </div>
             <div className="baseline-chip">
               Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <label style={{ cursor: 'pointer', background: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #ccc' }}>
+                Upload Project
+                <input type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
+              </label>
+              <span style={{ fontSize: '0.8rem', color: uploadStatus === 'error' ? 'red' : uploadStatus === 'success' ? 'green' : '#666' }}>
+                {uploadStatus === 'scanning' ? 'Scanning...' : uploadStatus === 'success' ? 'Success' : uploadStatus === 'error' ? 'Error' : ''}
+              </span>
             </div>
           </div>
         </header>

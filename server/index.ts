@@ -7,7 +7,7 @@ import zlib from 'node:zlib';
 import unzipper from 'unzipper';
 import type { File as ZipFileEntry } from 'unzipper';
 import { createScenarioStore } from './scenarioStore.ts';
-import { chatCompletion, type ChatMessage } from './llmClient.ts';
+import { chatCompletion, performOcr, type ChatMessage } from './llmClient.ts';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const store = createScenarioStore();
@@ -999,6 +999,30 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
           detail: formatUnknownError(error),
         });
       }
+    }
+    return;
+  }
+
+  if (requestUrl.startsWith('/api/ocr/parse')) {
+    if (method !== 'POST') {
+      sendJson(res, 405, { message: 'Method not allowed' });
+      return;
+    }
+    try {
+      const body = (await parseRequestBody(req)) as { image?: string };
+      const { image } = body;
+      if (!image || typeof image !== 'string' || !image.startsWith('data:image/')) {
+        sendJson(res, 400, { message: 'A valid base64 image string is required.' });
+        return;
+      }
+
+      const ocrResult = await performOcr(image);
+      const jsonData = JSON.parse(ocrResult);
+      sendJson(res, 200, jsonData);
+    } catch (error) {
+      console.error('OCR error:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+      sendJson(res, 500, { message: 'Failed to process the proforma.', details: message });
     }
     return;
   }
