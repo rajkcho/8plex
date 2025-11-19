@@ -81,7 +81,7 @@ const normalizeExpenseLabel = (label: string): string => sanitizeExpenseLabel(la
 
 const slugifyLabel = (label: string): string => label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-const percentageExpenseLabels = new Set(['vacancy and bad debt', 'management & salaries']);
+const percentageExpenseLabels = new Set(['vacancy and bad debt']);
 
 type MarketRentRow = {
   city: string;
@@ -605,9 +605,12 @@ function App() {
         let hasNewExpenses = false;
 
         if (result.expenses_breakdown && typeof result.expenses_breakdown === 'object') {
+          // If we have a breakdown, we should try to replace existing matching keys to avoid duplicates
+          // specifically targeting the "Management & salaries @ 5%" vs "Management & Salaries" issue
+          const existingKeys = Object.keys(newExpenses);
+          
           Object.entries(result.expenses_breakdown).forEach(([key, value]) => {
             if (typeof value === 'number') {
-              // Normalize keys to standard display labels
               let label = key;
               if (key.includes('tax')) label = 'Property Taxes';
               else if (key.includes('insurance')) label = 'Insurance';
@@ -615,7 +618,14 @@ function App() {
               else if (key.includes('util')) label = 'Utilities';
               else if (key.includes('repair') || key.includes('maint')) label = 'Repairs & Maintenance';
               else if (key.includes('vacan')) label = 'Vacancy and Bad Debt';
-              else label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '); // Fallback formatting
+              else label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+
+              // Remove any existing key that normalizes to the same thing (e.g. "Management & salaries @ 5%")
+              const normalizedNew = normalizeExpenseLabel(label);
+              const matchingOldKey = existingKeys.find(k => normalizeExpenseLabel(k) === normalizedNew);
+              if (matchingOldKey) {
+                delete newExpenses[matchingOldKey];
+              }
               
               newExpenses[label] = value;
               hasNewExpenses = true;
@@ -625,11 +635,14 @@ function App() {
 
         if (hasNewExpenses) {
           updates.operatingExpenses = newExpenses;
-          // Recalculate total if breakdown provided
-          updates.operatingExpenseTotal = Object.values(newExpenses).reduce((sum, v) => sum + v, 0);
-        } else if (typeof result.total_operating_expenses === 'number') {
-          // Fallback to just setting total if no breakdown
+        }
+        
+        // Always prefer the explicit total from the screenshot if available
+        if (typeof result.total_operating_expenses === 'number') {
           updates.operatingExpenseTotal = result.total_operating_expenses;
+        } else if (hasNewExpenses) {
+           // Fallback to sum if no explicit total found
+           updates.operatingExpenseTotal = Object.values(newExpenses).reduce((sum, v) => sum + v, 0);
         }
 
         // Unit Mix
@@ -639,6 +652,7 @@ function App() {
             units: u.count || 1,
             rent: u.monthly_rent || 0,
             bedrooms: u.bedrooms || 1,
+            usage: u.usage || 'Residential',
           }));
         }
         
@@ -1202,6 +1216,10 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
     updateUnitMixEntry(unitIndex, { name });
   };
 
+  const handleUnitUsageChange = (unitIndex: number, usage: string) => {
+    updateUnitMixEntry(unitIndex, { usage });
+  };
+
   const handleAddUnitType = () => {
     setAssumptions((prev) => {
       const currentUnitMix = prev.unitMix ?? [];
@@ -1211,6 +1229,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
         units: 0,
         rent: 0,
         bedrooms: 0,
+        usage: 'Residential',
       };
       return {
         ...prev,
@@ -1694,6 +1713,15 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                     </button>
                   </div>
                   <div className="unit-fields">
+                    <label>
+                      Usage
+                      <input
+                        type="text"
+                        value={unit.usage || ''}
+                        onChange={(event) => handleUnitUsageChange(index, event.target.value)}
+                        placeholder="Residential"
+                      />
+                    </label>
                     <label>
                       # of Units
                       <input

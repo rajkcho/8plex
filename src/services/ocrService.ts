@@ -3,6 +3,7 @@ export type OcrUnit = {
   count: number;
   monthly_rent: number;
   bedrooms: number;
+  usage?: string;
 };
 
 export type OcrResult = {

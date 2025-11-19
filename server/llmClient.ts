@@ -101,6 +101,7 @@ Return a strictly valid JSON object with these keys:
    - "count": Number of units (integer).
    - "monthly_rent": Monthly rent per unit (numeric).
    - "bedrooms": Number of bedrooms (integer, 0 for bachelor).
+   - "usage": Usage type (e.g., "Residential", "Commercial", "Parking"). Default to "Residential" if not specified.
 
 Sanitize all values. Remove currency symbols, commas, and percentage signs. Ensure decimals are used for percentages. If a value is not found, use null (or 0 for broker_fee).`,
         },
