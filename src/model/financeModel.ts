@@ -137,7 +137,7 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
 
   // "Total Opex (On-going)" implies the full load including management
   // Unused currently as KPIs use Year 1 base
-  // const noiOngoing = totalIncomeAnnual - totalOpexOngoing;
+  const noiOngoing = totalIncomeAnnual - totalOpexOngoing;
 
   const equityRequired = (purchasePrice + brokerFee) * depositPct;
   const inferredLoanAmount = assumptions.loanAmount ?? purchasePrice + brokerFee - equityRequired;
@@ -151,9 +151,9 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
   const monthlyDebtService = pmt(monthlyRate, periods, principalWithPremium);
   const debtServiceAnnual = monthlyDebtService * 12;
 
-  const cashFlow = noiYear1 - debtServiceAnnual; // "On Static KPI panel, NOI be based on Total Opex (Year 1)" implies CF/DSCR derived from this NOI
+  const cashFlow = noiOngoing - debtServiceAnnual; // Use On-going NOI per request
   const cashOnCash = equityRequired > 0 ? cashFlow / equityRequired : 0;
-  const dscr = debtServiceAnnual > 0 ? noiYear1 / debtServiceAnnual : 0;
+  const dscr = debtServiceAnnual > 0 ? noiOngoing / debtServiceAnnual : 0; // Use On-going NOI per request
   
   // Cap Rate uses Year 1 NOI (Excluding Management) per request
   const capRate = purchasePrice > 0 ? noiYear1 / purchasePrice : 0;
