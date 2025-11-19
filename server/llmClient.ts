@@ -84,18 +84,18 @@ export const performOcr = async (imageBase64: string): Promise<string> => {
           type: 'text',
           text: `You are an expert financial analyst. From the attached image, extract the "Year 1" financial metrics and the unit mix details.
 
-Return a JSON object with the following keys:
-1. "cash_flow_after_debt": Year 1 Cash Flow After Debt Service.
-2. "cash_on_cash": Year 1 Cash on Cash Return (levered).
-3. "dscr": Year 1 Debt Service Coverage Ratio.
-4. "cap_rate": Year 1 Cap Rate (Capitalization Rate).
-5. "unit_mix": An array of unit types found in the "Unit Mix" or "Rent Roll" section. For each type, include:
-   - "name": A label (e.g., "1 Bedroom", "2 Bedroom", "Bachelor").
-   - "count": The number of units of this type.
-   - "monthly_rent": The monthly rent per unit (Year 1 or current).
-   - "bedrooms": Estimated number of bedrooms (0 for bachelor, 1 for 1 bed, etc.).
+Return a strictly valid JSON object with the following keys:
+1. "cash_flow_after_debt": Year 1 Cash Flow After Debt Service (numeric).
+2. "cash_on_cash": Year 1 Cash on Cash Return (levered) as a decimal (e.g., 0.055 for 5.5%).
+3. "dscr": Year 1 Debt Service Coverage Ratio (numeric).
+4. "cap_rate": Year 1 Cap Rate as a decimal (e.g., 0.045 for 4.5%).
+5. "unit_mix": An array of unit types. For each type found:
+   - "name": Label (e.g., "1 Bedroom", "Bachelor").
+   - "count": Number of units (integer).
+   - "monthly_rent": Monthly rent per unit (numeric).
+   - "bedrooms": Number of bedrooms (integer, 0 for bachelor).
 
-Sanitize all numbers (remove '$', ',', '%'). Convert percentages to decimals (e.g., 5.5% -> 0.055) OR keep as simple floats if that's easier (e.g. 5.5), but consistent with the requested keys. Prefer pure numbers.`,
+Sanitize all values. Remove currency symbols, commas, and percentage signs. Ensure decimals are used for percentages.`,
         },
         {
           type: 'image_url',

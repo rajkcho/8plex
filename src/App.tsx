@@ -595,10 +595,10 @@ function App() {
 
       // Set Metrics Override
       setMetricsOverride({
-        cashFlow: result.cash_flow_after_debt,
-        cashOnCash: result.cash_on_cash,
-        dscr: result.dscr,
-        capRate: result.cap_rate, // Optional
+        cashFlow: typeof result.cash_flow_after_debt === 'number' ? result.cash_flow_after_debt : undefined,
+        cashOnCash: typeof result.cash_on_cash === 'number' ? result.cash_on_cash : undefined,
+        dscr: typeof result.dscr === 'number' ? result.dscr : undefined,
+        capRate: typeof result.cap_rate === 'number' ? result.cap_rate : undefined,
       });
 
       // Verify consistency (simple check)
