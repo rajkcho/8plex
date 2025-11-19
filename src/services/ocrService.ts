@@ -12,7 +12,10 @@ export const uploadProjectScreenshot = async (file: File): Promise<OcrResult> =>
     reader.readAsDataURL(file);
   });
 
-  const response = await fetch('/api/ocr/parse', {
+  const baseUrl = import.meta.env.VITE_SCENARIO_API_URL ?? '';
+  const endpoint = baseUrl ? `${baseUrl}/api/ocr/parse` : '/api/ocr/parse';
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
