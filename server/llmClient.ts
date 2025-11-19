@@ -72,7 +72,7 @@ export const performOcr = async (imageBase64: string): Promise<string> => {
     throw new Error('OPENROUTER_API_KEY is not configured');
   }
 
-  const model = process.env.OPENROUTER_VISION_MODEL ?? 'google/gemini-flash-1.5';
+  const model = process.env.OPENROUTER_VISION_MODEL ?? 'qwen/qwen-2-vl-72b-instruct';
   const baseUrl = process.env.OPENROUTER_BASE_URL ?? OPENROUTER_DEFAULT_BASE_URL;
   const endpoint = `${normalizeBaseUrl(baseUrl)}/chat/completions`;
 
