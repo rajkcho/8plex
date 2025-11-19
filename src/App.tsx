@@ -605,31 +605,37 @@ function App() {
         let hasNewExpenses = false;
 
         if (result.expenses_breakdown && typeof result.expenses_breakdown === 'object') {
-          // If we have a breakdown, we should try to replace existing matching keys to avoid duplicates
-          // specifically targeting the "Management & salaries @ 5%" vs "Management & Salaries" issue
-          const existingKeys = Object.keys(newExpenses);
-          
+          const expenseMapping: Record<string, string> = {
+            property_taxes: 'Property Taxes',
+            insurance: 'Insurance',
+            management_salaries: 'Management & Salaries',
+            utilities: 'Utilities',
+            repairs_maintenance: 'Repairs & Maintenance',
+            vacancy_bad_debt: 'Vacancy and Bad Debt',
+            other_costs: 'Other Costs',
+            replacement_reserve: 'Replacement Reserve'
+          };
+
+          // Helper to find and remove keys that match a fuzzy pattern (like "Management & Salaries @ 5%")
+          const removeFuzzyKey = (target: string) => {
+             const normalizedTarget = normalizeExpenseLabel(target);
+             const existingKey = Object.keys(newExpenses).find(k => normalizeExpenseLabel(k).includes(normalizedTarget.split(' ')[0])); // Match "management" in "management & salaries..."
+             if (existingKey) {
+               delete newExpenses[existingKey];
+             }
+          };
+
           Object.entries(result.expenses_breakdown).forEach(([key, value]) => {
             if (typeof value === 'number') {
-              let label = key;
-              if (key.includes('tax')) label = 'Property Taxes';
-              else if (key.includes('insurance')) label = 'Insurance';
-              else if (key.includes('manage')) label = 'Management & Salaries';
-              else if (key.includes('util')) label = 'Utilities';
-              else if (key.includes('repair') || key.includes('maint')) label = 'Repairs & Maintenance';
-              else if (key.includes('vacan')) label = 'Vacancy and Bad Debt';
-              else if (key.toLowerCase() === 'other_costs') label = 'Other Costs'; // Explicit match to avoid duplicates
-              else label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
-
-              // Remove any existing key that normalizes to the same thing (e.g. "Management & salaries @ 5%")
-              // Also check for "Other Costs" specifically to avoid the 3744 vs 3552 duplicate issue
-              const normalizedNew = normalizeExpenseLabel(label);
-              const matchingOldKey = existingKeys.find(k => normalizeExpenseLabel(k) === normalizedNew);
-              if (matchingOldKey) {
-                delete newExpenses[matchingOldKey];
-              }
+              const uiLabel = expenseMapping[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
               
-              newExpenses[label] = value;
+              // Clean up previous entries that might be duplicates (e.g. remove "Management & Salaries @ 5%" if we have "Management & Salaries")
+              if (key === 'management_salaries') removeFuzzyKey('management');
+              if (key === 'vacancy_bad_debt') removeFuzzyKey('vacancy');
+              if (key === 'other_costs') removeFuzzyKey('other costs');
+              
+              // Force update
+              newExpenses[uiLabel] = value;
               hasNewExpenses = true;
             }
           });

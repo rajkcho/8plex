@@ -95,8 +95,17 @@ Return a strictly valid JSON object with these keys:
 8. "interest_rate": Mortgage interest rate as a decimal (e.g., 0.045).
 9. "amortization_years": Mortgage amortization in years (integer).
 10. "total_operating_expenses": Total Annual Operating Expenses (numeric).
-11. "expenses_breakdown": Object containing individual annual expense line items found (e.g., {"property_taxes": 5000, "insurance": 1200, "management": 3000, "utilities": 2500, "repairs": 1500}). Use standard keys where possible.
-12. "unit_mix": An array of unit types. For each type found:
+  11. "expenses_breakdown": Object containing individual annual expense line items found. Use these specific keys if found:
+      - "property_taxes"
+      - "insurance"
+      - "management_salaries"
+      - "utilities"
+      - "repairs_maintenance"
+      - "vacancy_bad_debt"
+      - "other_costs"
+      - "replacement_reserve"
+      (Value should be the numeric annual amount. If only a % is shown, calculate it based on Effective Gross Income if possible, otherwise return null).
+  12. "unit_mix": An array of unit types. For each type found:
    - "name": Label (e.g., "1 Bedroom", "Bachelor").
    - "count": Number of units (integer).
    - "monthly_rent": Monthly rent per unit (numeric).

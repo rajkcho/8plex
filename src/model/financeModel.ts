@@ -117,39 +117,27 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
   // Total Opex (Year 1) excludes Management & Salaries for some definitions, but here we want standard NOI logic
   // The prompt asks for "Total Opex (Year 1)" to *not* include Management & Salaries, and "Total Opex (On-going)" to include it.
   
-  // Let's identify Management & Salaries amount
+  const totalOpexOngoing = sumOperatingExpenses(operatingExpenses);
+  
+  // Identify Management to exclude for Year 1
   let managementAmount = 0;
-  const managementLabel = Object.keys(operatingExpenses).find(k => k.toLowerCase().includes('management'));
-  if (managementLabel) {
-    managementAmount = operatingExpenses[managementLabel];
+  const managementKey = Object.keys(operatingExpenses).find(k => {
+      const norm = k.toLowerCase();
+      return norm.includes('management') || norm.includes('salaries');
+  });
+  if (managementKey) {
+      managementAmount = operatingExpenses[managementKey];
   }
 
-  // The user requested:
-  // "Total Opex (Year 1)" -> Excludes Management
-  // "Total Opex (On-going)" -> Includes Management
-  
-  // For NOI calculation (which feeds Cap Rate), we typically use the FULL Opex (On-going) to get a stabilized NOI.
-  // However, the request says "Cap Rate should be calculated based on Total Opex (Year 1)".
-  
-  // Let's calculate both totals:
-  const totalOpexOngoing = sumOperatingExpenses(operatingExpenses) - managementAmount; // Remove salaries from On-going per user request "Total Opex (On-going) calculation should not include Salaries"
-  const totalOpexYear1 = totalOpexOngoing; // If salaries are removed from ongoing, and Year 1 also excludes them, they might be the same now unless other items differ.
+  // "Total Opex (Year 1) should not include Management & Salaries"
+  const totalOpexYear1 = totalOpexOngoing - managementAmount;
 
-  // Re-reading requirement: "Total Opex (On-going) calculation should not include Salaries."
-  // Previous requirement: "Change 'Total Opex' to 'Total Opex (Year 1)', which would not include Management & Salaries."
-  // It seems BOTH now exclude Salaries? Or is "Salaries" distinct from "Management"?
-  // Assuming "Management & Salaries" is the single line item to exclude from BOTH metrics based on "Total Opex (On-going) calculation should not include Salaries".
-
-  // User: "On Static KPI panel, NOI be based on Total Opex (Year 1)."
+  // "On static KPI panel, NOI should be based off of Total Opex (Year 1)."
   const noiYear1 = totalIncomeAnnual - totalOpexYear1;
-  const noiOngoing = totalIncomeAnnual - totalOpexOngoing; // They are the same now if both exclude salaries.
 
-  // Logic split:
-  // Cap Rate uses noiYear1
-  // Cash Flow, DSCR, Cash-on-Cash use noiOngoing (which is now equal to Year 1 if salaries excluded from both)
-
-  // Wait, if On-going excludes salaries, where do salaries go? Maybe they are considered below the line or ignored?
-  // Implementing exactly as requested: "Total Opex (On-going) calculation should not include Salaries"
+  // "Total Opex (On-going)" implies the full load including management
+  // Unused currently as KPIs use Year 1 base
+  // const noiOngoing = totalIncomeAnnual - totalOpexOngoing;
 
   const equityRequired = (purchasePrice + brokerFee) * depositPct;
   const inferredLoanAmount = assumptions.loanAmount ?? purchasePrice + brokerFee - equityRequired;
@@ -179,7 +167,7 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
   // For now, let's stick to summation logic as OCR now provides breakdown.
 
   return {
-    noi: noiOngoing, // Standard NOI usually implies stabilized/ongoing
+    noi: noiYear1, // Standard NOI usually implies stabilized/ongoing, but user explicitly requested: "On static KPI panel, NOI be based on Total Opex (Year 1)"
     noiYear1, // Exporting this for internal use if needed, or just keeping noi as is
     cashFlow,
     cashOnCash,
