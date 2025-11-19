@@ -140,14 +140,20 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
   const noiOngoing = totalIncomeAnnual - totalOpexOngoing;
 
   const equityRequired = (purchasePrice + brokerFee) * depositPct;
-  const inferredLoanAmount = assumptions.loanAmount ?? purchasePrice + brokerFee - equityRequired;
-  const loanAmountEffective = Math.max(inferredLoanAmount, 0);
+  
+  // Loan Amount calculation: (Capex Adjusted Purchase Price * Loan to Value) + CMHC premium
+  const capexAdjustedPrice = purchasePrice + brokerFee;
+  const baseLoanAmount = assumptions.loanAmount ?? (capexAdjustedPrice * loanToValue);
+  
+  // Effective Loan Amount includes the CMHC premium
+  const loanAmountEffective = Math.max(baseLoanAmount * (1 + (assumptions.cmhcPremiumRate ?? 0)), 0);
 
   const interestRate = assumptions.interestRate ?? 0;
   const amortYears = assumptions.amortYears ?? 0;
   const periods = amortYears * 12;
   const monthlyRate = interestRate / 12;
-  const principalWithPremium = loanAmountEffective * (1 + (assumptions.cmhcPremiumRate ?? 0));
+  // Principal for PMT is the fully loaded loan amount
+  const principalWithPremium = loanAmountEffective;
   const monthlyDebtService = pmt(monthlyRate, periods, principalWithPremium);
   const debtServiceAnnual = monthlyDebtService * 12;
 

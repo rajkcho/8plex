@@ -633,6 +633,7 @@ function App() {
               if (key === 'management_salaries') removeFuzzyKey('management');
               if (key === 'vacancy_bad_debt') removeFuzzyKey('vacancy');
               if (key === 'other_costs') removeFuzzyKey('other costs');
+              if (key === 'repairs_maintenance') removeFuzzyKey('repairs');
               
               // Force update
               newExpenses[uiLabel] = value;

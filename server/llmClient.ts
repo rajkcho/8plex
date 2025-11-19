@@ -72,7 +72,7 @@ export const performOcr = async (imageBase64: string): Promise<string> => {
     throw new Error('OPENROUTER_API_KEY is not configured');
   }
 
-  const model = process.env.OPENROUTER_VISION_MODEL ?? 'openai/gpt-4o-mini';
+  const model = process.env.OPENROUTER_VISION_MODEL ?? 'google/gemini-flash-1.5';
   const baseUrl = process.env.OPENROUTER_BASE_URL ?? OPENROUTER_DEFAULT_BASE_URL;
   const endpoint = `${normalizeBaseUrl(baseUrl)}/chat/completions`;
 
@@ -83,6 +83,7 @@ export const performOcr = async (imageBase64: string): Promise<string> => {
         {
           type: 'text',
           text: `You are an expert financial analyst. From the attached real estate proforma image, extract the following details.
+Think step by step. Reason about which numbers correspond to the requested fields, especially for expenses.
 
 Return a strictly valid JSON object with these keys:
 1. "cash_flow_after_debt": Year 1 Cash Flow After Debt Service (numeric).
@@ -96,9 +97,9 @@ Return a strictly valid JSON object with these keys:
 9. "amortization_years": Mortgage amortization in years (integer).
 10. "total_operating_expenses": Total Annual Operating Expenses (numeric).
   11. "expenses_breakdown": Object containing individual annual expense line items found. Use these specific keys if found:
-      - "property_taxes"
+      - "property_taxes" (Look for "Taxes", "Property Tax", "Realty Tax")
       - "insurance"
-      - "management_salaries"
+      - "management_salaries" (Look for "Management", "Salaries", "Admin", "Payroll")
       - "utilities"
       - "repairs_maintenance"
       - "vacancy_bad_debt"
