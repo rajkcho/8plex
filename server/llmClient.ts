@@ -82,11 +82,20 @@ export const performOcr = async (imageBase64: string): Promise<string> => {
       content: [
         {
           type: 'text',
-          text: `You are an expert financial analyst. From the attached image, find the "Year 1" column and extract the values for "Cash Flow After Debt Service", "Cash on Cash Return (levered)", and "Debt Service Coverage Ratio".
-- "Cash Flow After Debt Service" should be the key "cash_flow_after_debt".
-- "Cash on Cash Return (levered)" should be the key "cash_on_cash".
-- "Debt Service Coverage Ratio" should be the key "dscr".
-Your response MUST be ONLY a valid JSON object with these keys. Sanitize currency strings (e.g., "$30,165.79") and percentages (e.g., "24.6%") into clean float numbers (e.g., 30165.79 and 0.246).`,
+          text: `You are an expert financial analyst. From the attached image, extract the "Year 1" financial metrics and the unit mix details.
+
+Return a JSON object with the following keys:
+1. "cash_flow_after_debt": Year 1 Cash Flow After Debt Service.
+2. "cash_on_cash": Year 1 Cash on Cash Return (levered).
+3. "dscr": Year 1 Debt Service Coverage Ratio.
+4. "cap_rate": Year 1 Cap Rate (Capitalization Rate).
+5. "unit_mix": An array of unit types found in the "Unit Mix" or "Rent Roll" section. For each type, include:
+   - "name": A label (e.g., "1 Bedroom", "2 Bedroom", "Bachelor").
+   - "count": The number of units of this type.
+   - "monthly_rent": The monthly rent per unit (Year 1 or current).
+   - "bedrooms": Estimated number of bedrooms (0 for bachelor, 1 for 1 bed, etc.).
+
+Sanitize all numbers (remove '$', ',', '%'). Convert percentages to decimals (e.g., 5.5% -> 0.055) OR keep as simple floats if that's easier (e.g. 5.5), but consistent with the requested keys. Prefer pure numbers.`,
         },
         {
           type: 'image_url',
@@ -107,7 +116,7 @@ Your response MUST be ONLY a valid JSON object with these keys. Sanitize currenc
     body: JSON.stringify({
       model,
       messages,
-      max_tokens: 500,
+      max_tokens: 1000,
       temperature: 0.0,
       response_format: { type: 'json_object' },
     }),

@@ -537,6 +537,10 @@ function App() {
   const [interestStepBps, setInterestStepBps] = useState(5);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const [metricsOverride, setMetricsOverride] = useState<Partial<FinanceMetrics> | null>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  
+  // Flag to prevent clearing overrides when OCR updates assumptions
+  const isOcrUpdateRef = useRef(false);
 
   const brokerFeeSliderMax = Math.max(assumptions.brokerFee || 0, 250_000);
   const contingencySliderMax = Math.max((assumptions.contingencyPct ?? 0) * 100, 20);
@@ -549,10 +553,15 @@ function App() {
     return calculated;
   }, [assumptions, metricsOverride]);
 
-  // Clear override when assumptions change
+  // Clear override when assumptions change, unless it's an OCR update
   useEffect(() => {
-    if (metricsOverride) {
+    if (metricsOverride && !isOcrUpdateRef.current) {
       setMetricsOverride(null);
+      setShowSuccessMessage(false);
+    }
+    // Reset the flag after a render cycle
+    if (isOcrUpdateRef.current) {
+      isOcrUpdateRef.current = false;
     }
   }, [assumptions]);
 
@@ -561,14 +570,45 @@ function App() {
     if (!file) return;
 
     setUploadStatus('scanning');
+    setShowSuccessMessage(false);
     try {
       const result: OcrResult = await uploadProjectScreenshot(file);
+      
+      // Mark this as an OCR update so the effect doesn't clear our overrides immediately
+      isOcrUpdateRef.current = true;
+
+      // Update Assumptions (Unit Mix) if available
+      if (result.unit_mix && Array.isArray(result.unit_mix) && result.unit_mix.length > 0) {
+        setAssumptions((prev) => {
+          const newMix: UnitAssumption[] = result.unit_mix!.map((u) => ({
+            name: u.name || 'Unit',
+            units: u.count || 1,
+            rent: u.monthly_rent || 0,
+            bedrooms: u.bedrooms || 1,
+          }));
+          return {
+            ...prev,
+            unitMix: newMix,
+          };
+        });
+      }
+
+      // Set Metrics Override
       setMetricsOverride({
         cashFlow: result.cash_flow_after_debt,
         cashOnCash: result.cash_on_cash,
         dscr: result.dscr,
+        capRate: result.cap_rate, // Optional
       });
+
+      // Verify consistency (simple check)
+      /*
+      const calculated = calculateMetrics(assumptions); // Note: This uses old assumptions state here, so it's tricky to verify instantly without another effect.
+      // Ideally we trust the screenshot values as the 'truth' for this import.
+      */
+
       setUploadStatus('success');
+      setShowSuccessMessage(true);
       setTimeout(() => setUploadStatus('idle'), 3000);
     } catch (error) {
       console.error('Upload failed:', error);
@@ -1325,6 +1365,11 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
               <span style={{ fontSize: '0.8rem', color: uploadStatus === 'error' ? 'red' : uploadStatus === 'success' ? 'green' : '#666' }}>
                 {uploadStatus === 'scanning' ? 'Scanning...' : uploadStatus === 'success' ? 'Success' : uploadStatus === 'error' ? 'Error' : ''}
               </span>
+              {showSuccessMessage && (
+                <span style={{ fontSize: '0.8rem', color: 'green', marginTop: '2px' }}>
+                  Successfully Updated
+                </span>
+              )}
             </div>
           </div>
         </header>

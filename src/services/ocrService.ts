@@ -1,7 +1,16 @@
+export type OcrUnit = {
+  name: string;
+  count: number;
+  monthly_rent: number;
+  bedrooms: number;
+};
+
 export type OcrResult = {
   cash_flow_after_debt: number;
   cash_on_cash: number;
   dscr: number;
+  cap_rate?: number;
+  unit_mix?: OcrUnit[];
 };
 
 export const uploadProjectScreenshot = async (file: File): Promise<OcrResult> => {
@@ -64,6 +73,7 @@ export const uploadProjectScreenshot = async (file: File): Promise<OcrResult> =>
   }
 
   const result = await response.json();
+  // Basic validation
   if (
     typeof result.cash_flow_after_debt !== 'number' ||
     typeof result.cash_on_cash !== 'number' ||
