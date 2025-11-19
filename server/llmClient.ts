@@ -91,16 +91,18 @@ Return a strictly valid JSON object with these keys:
 4. "cap_rate": Year 1 Cap Rate as a decimal (e.g., 0.045 for 4.5%).
 5. "purchase_price": Total purchase price (numeric).
 6. "down_payment": Total cash required/equity/down payment (numeric).
-7. "interest_rate": Mortgage interest rate as a decimal (e.g., 0.045).
-8. "amortization_years": Mortgage amortization in years (integer).
-9. "total_operating_expenses": Total Annual Operating Expenses (numeric).
-10. "unit_mix": An array of unit types. For each type found:
+7. "broker_fee": Broker fee or acquisition fee (numeric). If not found, return 0.
+8. "interest_rate": Mortgage interest rate as a decimal (e.g., 0.045).
+9. "amortization_years": Mortgage amortization in years (integer).
+10. "total_operating_expenses": Total Annual Operating Expenses (numeric).
+11. "expenses_breakdown": Object containing individual annual expense line items found (e.g., {"property_taxes": 5000, "insurance": 1200, "management": 3000, "utilities": 2500, "repairs": 1500}). Use standard keys where possible.
+12. "unit_mix": An array of unit types. For each type found:
    - "name": Label (e.g., "1 Bedroom", "Bachelor").
    - "count": Number of units (integer).
    - "monthly_rent": Monthly rent per unit (numeric).
    - "bedrooms": Number of bedrooms (integer, 0 for bachelor).
 
-Sanitize all values. Remove currency symbols, commas, and percentage signs. Ensure decimals are used for percentages. If a value is not found, use null.`,
+Sanitize all values. Remove currency symbols, commas, and percentage signs. Ensure decimals are used for percentages. If a value is not found, use null (or 0 for broker_fee).`,
         },
         {
           type: 'image_url',

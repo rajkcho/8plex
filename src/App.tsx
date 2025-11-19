@@ -585,6 +585,9 @@ function App() {
         if (typeof result.purchase_price === 'number') {
           updates.purchasePrice = result.purchase_price;
         }
+        // Explicitly set broker fee (default to 0 if undefined or null in OCR result, though prompt requests 0)
+        updates.brokerFee = typeof result.broker_fee === 'number' ? result.broker_fee : 0;
+
         if (typeof result.interest_rate === 'number') {
           updates.interestRate = result.interest_rate;
         }
@@ -598,10 +601,35 @@ function App() {
         }
 
         // Operating Expenses
-        if (typeof result.total_operating_expenses === 'number') {
+        const newExpenses = { ...(prev.operatingExpenses ?? {}) };
+        let hasNewExpenses = false;
+
+        if (result.expenses_breakdown && typeof result.expenses_breakdown === 'object') {
+          Object.entries(result.expenses_breakdown).forEach(([key, value]) => {
+            if (typeof value === 'number') {
+              // Normalize keys to standard display labels
+              let label = key;
+              if (key.includes('tax')) label = 'Property Taxes';
+              else if (key.includes('insurance')) label = 'Insurance';
+              else if (key.includes('manage')) label = 'Management & Salaries';
+              else if (key.includes('util')) label = 'Utilities';
+              else if (key.includes('repair') || key.includes('maint')) label = 'Repairs & Maintenance';
+              else if (key.includes('vacan')) label = 'Vacancy and Bad Debt';
+              else label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '); // Fallback formatting
+              
+              newExpenses[label] = value;
+              hasNewExpenses = true;
+            }
+          });
+        }
+
+        if (hasNewExpenses) {
+          updates.operatingExpenses = newExpenses;
+          // Recalculate total if breakdown provided
+          updates.operatingExpenseTotal = Object.values(newExpenses).reduce((sum, v) => sum + v, 0);
+        } else if (typeof result.total_operating_expenses === 'number') {
+          // Fallback to just setting total if no breakdown
           updates.operatingExpenseTotal = result.total_operating_expenses;
-          // When total is set, individual items are ignored by calculateMetrics, but we might want to keep them or reset them.
-          // For now, setting operatingExpenseTotal forces the calculation to use this sum.
         }
 
         // Unit Mix

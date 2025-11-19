@@ -12,9 +12,11 @@ export type OcrResult = {
   cap_rate?: number;
   purchase_price?: number;
   down_payment?: number;
+  broker_fee?: number;
   interest_rate?: number;
   amortization_years?: number;
   total_operating_expenses?: number;
+  expenses_breakdown?: Record<string, number>;
   unit_mix?: OcrUnit[];
 };
 
