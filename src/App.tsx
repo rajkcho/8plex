@@ -577,21 +577,45 @@ function App() {
       // Mark this as an OCR update so the effect doesn't clear our overrides immediately
       isOcrUpdateRef.current = true;
 
-      // Update Assumptions (Unit Mix) if available
-      if (result.unit_mix && Array.isArray(result.unit_mix) && result.unit_mix.length > 0) {
-        setAssumptions((prev) => {
-          const newMix: UnitAssumption[] = result.unit_mix!.map((u) => ({
+      // Update Assumptions from OCR if available
+      setAssumptions((prev) => {
+        const updates: Partial<Assumptions> = {};
+
+        // Capital Stack
+        if (typeof result.purchase_price === 'number') {
+          updates.purchasePrice = result.purchase_price;
+        }
+        if (typeof result.interest_rate === 'number') {
+          updates.interestRate = result.interest_rate;
+        }
+        if (typeof result.amortization_years === 'number') {
+          updates.amortYears = result.amortization_years;
+        }
+        if (typeof result.purchase_price === 'number' && typeof result.down_payment === 'number' && result.purchase_price > 0) {
+          // Calculate depositPct based on down payment
+          updates.depositPct = result.down_payment / result.purchase_price;
+          updates.loanToValue = 1 - updates.depositPct;
+        }
+
+        // Operating Expenses
+        if (typeof result.total_operating_expenses === 'number') {
+          updates.operatingExpenseTotal = result.total_operating_expenses;
+          // When total is set, individual items are ignored by calculateMetrics, but we might want to keep them or reset them.
+          // For now, setting operatingExpenseTotal forces the calculation to use this sum.
+        }
+
+        // Unit Mix
+        if (result.unit_mix && Array.isArray(result.unit_mix) && result.unit_mix.length > 0) {
+          updates.unitMix = result.unit_mix!.map((u) => ({
             name: u.name || 'Unit',
             units: u.count || 1,
             rent: u.monthly_rent || 0,
             bedrooms: u.bedrooms || 1,
           }));
-          return {
-            ...prev,
-            unitMix: newMix,
-          };
-        });
-      }
+        }
+        
+        return { ...prev, ...updates };
+      });
 
       // Set Metrics Override
       setMetricsOverride({
@@ -601,19 +625,14 @@ function App() {
         capRate: typeof result.cap_rate === 'number' ? result.cap_rate : undefined,
       });
 
-      // Verify consistency (simple check)
-      /*
-      const calculated = calculateMetrics(assumptions); // Note: This uses old assumptions state here, so it's tricky to verify instantly without another effect.
-      // Ideally we trust the screenshot values as the 'truth' for this import.
-      */
-
+      // Set Upload Status
       setUploadStatus('success');
       setShowSuccessMessage(true);
-      setTimeout(() => setUploadStatus('idle'), 3000);
+      // Removed timeout so success message persists
     } catch (error) {
       console.error('Upload failed:', error);
       setUploadStatus('error');
-      setTimeout(() => setUploadStatus('idle'), 3000);
+      // Removed timeout so error message persists (or can add explicit dismiss)
     }
   };
 

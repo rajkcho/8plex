@@ -82,20 +82,25 @@ export const performOcr = async (imageBase64: string): Promise<string> => {
       content: [
         {
           type: 'text',
-          text: `You are an expert financial analyst. From the attached image, extract the "Year 1" financial metrics and the unit mix details.
+          text: `You are an expert financial analyst. From the attached real estate proforma image, extract the following details.
 
-Return a strictly valid JSON object with the following keys:
+Return a strictly valid JSON object with these keys:
 1. "cash_flow_after_debt": Year 1 Cash Flow After Debt Service (numeric).
 2. "cash_on_cash": Year 1 Cash on Cash Return (levered) as a decimal (e.g., 0.055 for 5.5%).
 3. "dscr": Year 1 Debt Service Coverage Ratio (numeric).
 4. "cap_rate": Year 1 Cap Rate as a decimal (e.g., 0.045 for 4.5%).
-5. "unit_mix": An array of unit types. For each type found:
+5. "purchase_price": Total purchase price (numeric).
+6. "down_payment": Total cash required/equity/down payment (numeric).
+7. "interest_rate": Mortgage interest rate as a decimal (e.g., 0.045).
+8. "amortization_years": Mortgage amortization in years (integer).
+9. "total_operating_expenses": Total Annual Operating Expenses (numeric).
+10. "unit_mix": An array of unit types. For each type found:
    - "name": Label (e.g., "1 Bedroom", "Bachelor").
    - "count": Number of units (integer).
    - "monthly_rent": Monthly rent per unit (numeric).
    - "bedrooms": Number of bedrooms (integer, 0 for bachelor).
 
-Sanitize all values. Remove currency symbols, commas, and percentage signs. Ensure decimals are used for percentages.`,
+Sanitize all values. Remove currency symbols, commas, and percentage signs. Ensure decimals are used for percentages. If a value is not found, use null.`,
         },
         {
           type: 'image_url',
