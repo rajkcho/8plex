@@ -1104,10 +1104,12 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
     }));
   };
 
+  /*
   const totalOperatingExpenses = useMemo(() => {
     const expenses = assumptions.operatingExpenses ?? {};
     return Object.values(expenses).reduce((sum, value) => sum + value, 0);
   }, [assumptions.operatingExpenses]);
+  */
   const operatingExpenseEntries = useMemo(() => {
     const expenses = Object.entries(assumptions.operatingExpenses ?? {});
     if (!expenses.length) {
@@ -1371,7 +1373,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
       },
     },
     {
-      label: 'Annual CF',
+      label: 'Annual CF (On-going)',
       value: metrics.cashFlow,
       format: currencyFormatter.format,
       tooltip: {
@@ -1380,7 +1382,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
       },
     },
     {
-      label: 'Cash-on-Cash',
+      label: 'Cash-on-Cash (On-going)',
       value: metrics.cashOnCash,
       format: percentFormatter.format,
       tooltip: {
@@ -1389,7 +1391,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
       },
     },
     {
-      label: 'DSCR',
+      label: 'DSCR (On-going)',
       value: metrics.dscr,
       format: percentFormatter.format,
       tooltip: {
@@ -1573,6 +1575,35 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
                       value={formatCurrencyInputValue(assumptions.brokerFee)}
                       onChange={(event) => handleBrokerFeeChange(parseCurrencyInputValue(event.target.value))}
                     />
+                  </div>
+                </div>
+              </div>
+              <div className="input-control">
+                <label htmlFor="cmhcPremiumRate">CMHC Premium</label>
+                <div className="input-row">
+                  <input
+                    id="cmhcPremiumRate"
+                    type="range"
+                    min={0}
+                    max={10}
+                    step={0.05}
+                    value={(assumptions.cmhcPremiumRate ?? 0) * 100}
+                    onChange={(event) =>
+                      setAssumptions((prev) => ({ ...prev, cmhcPremiumRate: Number(event.target.value) / 100 }))
+                    }
+                  />
+                  <div className="percent-input">
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.05}
+                      value={Number(((assumptions.cmhcPremiumRate ?? 0) * 100).toFixed(2))}
+                      onChange={(event) =>
+                        setAssumptions((prev) => ({ ...prev, cmhcPremiumRate: Number(event.target.value) / 100 }))
+                      }
+                    />
+                    <span className="suffix">%</span>
                   </div>
                 </div>
               </div>
@@ -1765,26 +1796,63 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
               {assumptions.otherIncomeItems.map((item, index) => (
                 <div key={item.name} className="unit-card">
                   <p className="unit-label">{item.name}</p>
-                  <label>
-                    Monthly Amount
-                    <div className="currency-input">
-                      <span className="prefix">$</span>
+                  <div className="unit-fields">
+                    <label>
+                      # of Units
                       <input
-                        type="text"
-                        inputMode="numeric"
-                        value={formatCurrencyInputValue(item.monthlyAmount)}
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={item.units}
                         onChange={(event) => {
-                          const value = parseCurrencyInputValue(event.target.value);
+                          const value = Math.max(0, Number(event.target.value));
                           setAssumptions((prev) => {
                             const updated = prev.otherIncomeItems.map((income, idx) =>
-                              idx === index ? { ...income, monthlyAmount: value } : income,
+                              idx === index ? { ...income, units: value } : income,
                             );
                             return { ...prev, otherIncomeItems: updated };
                           });
                         }}
                       />
-                    </div>
-                  </label>
+                    </label>
+                    <label>
+                      Usage
+                      <input
+                        type="number"
+                        step={0.1}
+                        value={item.usage}
+                        onChange={(event) => {
+                          const value = Number(event.target.value);
+                          setAssumptions((prev) => {
+                            const updated = prev.otherIncomeItems.map((income, idx) =>
+                              idx === index ? { ...income, usage: value } : income,
+                            );
+                            return { ...prev, otherIncomeItems: updated };
+                          });
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Monthly Amount
+                      <div className="currency-input">
+                        <span className="prefix">$</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatCurrencyInputValue(item.monthlyAmount)}
+                          onChange={(event) => {
+                            const value = parseCurrencyInputValue(event.target.value);
+                            setAssumptions((prev) => {
+                              const updated = prev.otherIncomeItems.map((income, idx) =>
+                                idx === index ? { ...income, monthlyAmount: value } : income,
+                              );
+                              return { ...prev, otherIncomeItems: updated };
+                            });
+                          }}
+                        />
+                      </div>
+                    </label>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1795,9 +1863,15 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
               <h2>Operating Expenses</h2>
               <p>Control total opex or fine-tune individual categories.</p>
             </div>
-            <div className="opex-kpi-card">
-              <p className="metric-label">Total Opex</p>
-              <p className="metric-value">{currencyFormatter.format(totalOperatingExpenses)}</p>
+            <div className="opex-kpi-card-group">
+              <div className="opex-kpi-card">
+                <p className="metric-label">Total Opex (Year 1)</p>
+                <p className="metric-value">{currencyFormatter.format(metrics.operatingExpensesYear1)}</p>
+              </div>
+              <div className="opex-kpi-card">
+                <p className="metric-label">Total Opex (On-going)</p>
+                <p className="metric-value">{currencyFormatter.format(metrics.operatingExpensesAnnual)}</p>
+              </div>
             </div>
             <div className="expense-list">
               {operatingExpenseEntries.map(([label, value]) => {

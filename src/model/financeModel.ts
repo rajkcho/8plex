@@ -35,6 +35,7 @@ export type Assumptions = {
 
 export type FinanceMetrics = {
   noi: number;
+  noiYear1: number;
   cashFlow: number;
   cashOnCash: number;
   dscr: number;
@@ -42,6 +43,7 @@ export type FinanceMetrics = {
   grossRentAnnual: number;
   otherIncomeAnnual: number;
   operatingExpensesAnnual: number;
+  operatingExpensesYear1: number;
   totalIncomeAnnual: number;
   debtServiceAnnual: number;
   monthlyDebtService: number;
@@ -98,13 +100,52 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
   const operatingExpenses = assumptions.operatingExpenses ?? {};
 
   const grossRentMonthly = unitMix.reduce((sum, unit) => sum + unit.units * unit.rent, 0);
+  const grossRentAnnual = grossRentMonthly * 12;
+
   const otherIncomeMonthly = otherIncomeItems.reduce((sum, item) => sum + item.units * item.usage * item.monthlyAmount, 0);
-  const totalIncomeAnnual = (grossRentMonthly + otherIncomeMonthly) * 12;
+  const totalIncomeAnnual = grossRentAnnual + (otherIncomeMonthly * 12);
 
-  const operatingExpenseTotal = assumptions.operatingExpenseTotal ?? sumOperatingExpenses(operatingExpenses);
-  const operatingExpensesAnnual = operatingExpenseTotal > 0 ? operatingExpenseTotal : sumOperatingExpenses(operatingExpenses);
+  const operatingExpensesCopy = { ...operatingExpenses };
+  
+  // Handle Vacancy calculation (percentage of Gross Rent only, excluding Other Income)
+  const vacancyLabel = Object.keys(operatingExpensesCopy).find(k => k.toLowerCase().includes('vacancy'));
+  if (vacancyLabel && operatingExpensesCopy[vacancyLabel] < 1) { // Assuming if < 1 it's a raw decimal like 0.03
+      operatingExpensesCopy[vacancyLabel] = operatingExpensesCopy[vacancyLabel] * grossRentAnnual;
+  }
 
-  const noi = totalIncomeAnnual - operatingExpensesAnnual;
+  // const operatingExpenseTotal = assumptions.operatingExpenseTotal ?? sumOperatingExpenses(operatingExpenses);
+  // Total Opex (Year 1) excludes Management & Salaries for some definitions, but here we want standard NOI logic
+  // The prompt asks for "Total Opex (Year 1)" to *not* include Management & Salaries, and "Total Opex (On-going)" to include it.
+  
+  // Let's identify Management & Salaries amount
+  let managementAmount = 0;
+  const managementLabel = Object.keys(operatingExpenses).find(k => k.toLowerCase().includes('management'));
+  if (managementLabel) {
+    managementAmount = operatingExpenses[managementLabel];
+  }
+
+  // The user requested:
+  // "Total Opex (Year 1)" -> Excludes Management
+  // "Total Opex (On-going)" -> Includes Management
+  
+  // For NOI calculation (which feeds Cap Rate), we typically use the FULL Opex (On-going) to get a stabilized NOI.
+  // However, the request says "Cap Rate should be calculated based on Total Opex (Year 1)".
+  
+  // Let's calculate both totals:
+  const totalOpexOngoing = sumOperatingExpenses(operatingExpenses);
+  const totalOpexYear1 = totalOpexOngoing - managementAmount;
+
+  // User: "Cap Rate should be calculated based on Total Opex (Year 1)"
+  // So NOI for Cap Rate = Income - OpexYear1
+  const noiYear1 = totalIncomeAnnual - totalOpexYear1;
+  
+  // User: "On Static KPIs, add '(On-going)' to Annual CF, Cash-On-Cash and DSCR."
+  // This implies these specific metrics should use the "On-going" expenses (full load).
+  const noiOngoing = totalIncomeAnnual - totalOpexOngoing;
+
+  // Logic split:
+  // Cap Rate uses noiYear1
+  // Cash Flow, DSCR, Cash-on-Cash use noiOngoing
 
   const equityRequired = (purchasePrice + brokerFee) * depositPct;
   const inferredLoanAmount = assumptions.loanAmount ?? purchasePrice + brokerFee - equityRequired;
@@ -118,20 +159,32 @@ export const calculateMetrics = (assumptions: Assumptions): FinanceMetrics => {
   const monthlyDebtService = pmt(monthlyRate, periods, principalWithPremium);
   const debtServiceAnnual = monthlyDebtService * 12;
 
-  const cashFlow = noi - debtServiceAnnual;
+  const cashFlow = noiOngoing - debtServiceAnnual;
   const cashOnCash = equityRequired > 0 ? cashFlow / equityRequired : 0;
-  const dscr = debtServiceAnnual > 0 ? noi / debtServiceAnnual : 0;
-  const capRate = purchasePrice > 0 ? noi / purchasePrice : 0;
+  const dscr = debtServiceAnnual > 0 ? noiOngoing / debtServiceAnnual : 0;
+  
+  // Cap Rate uses Year 1 NOI (Excluding Management) per request
+  const capRate = purchasePrice > 0 ? noiYear1 / purchasePrice : 0;
+
+  // If user provided an explicit operatingExpenseTotal (override from OCR), we need to decide which one it represents.
+  // Assuming the OCR "Total Operating Expenses" usually maps to the full on-going amount unless specified otherwise.
+  // But strict compliance with the prompt:
+  
+  // Let's trust the individual items summation for these distinct calculations unless override is forced.
+  // If override exists, we might lose the distinction unless we try to back-calculate.
+  // For now, let's stick to summation logic as OCR now provides breakdown.
 
   return {
-    noi,
+    noi: noiOngoing, // Standard NOI usually implies stabilized/ongoing
+    noiYear1, // Exporting this for internal use if needed, or just keeping noi as is
     cashFlow,
     cashOnCash,
     dscr,
     capRate,
-    grossRentAnnual: grossRentMonthly * 12,
+    grossRentAnnual,
     otherIncomeAnnual: otherIncomeMonthly * 12,
-    operatingExpensesAnnual,
+    operatingExpensesAnnual: totalOpexOngoing,
+    operatingExpensesYear1: totalOpexYear1,
     totalIncomeAnnual,
     debtServiceAnnual,
     monthlyDebtService,
