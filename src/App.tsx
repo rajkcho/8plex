@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties, FormEvent } from 'react';
 import { calculateMetrics, loadBaselineAssumptions, type Assumptions, type FinanceMetrics, type UnitAssumption } from './model/financeModel';
+import { uploadProjectScreenshot, type OcrResult } from './services/ocrService';
 import trashIcon from '../trash.png';
 import diskIcon from '../disk.png';
 import headerLogo from '../logo3.png';
@@ -23,7 +24,6 @@ import {
 import type { TooltipProps } from 'recharts';
 import rentsCsv from '../rentsv2.csv?raw';
 import cmhcCmaList from './assets/cmhc-cmas.json';
-import { uploadProjectScreenshot, type OcrResult } from './services/projectOcr.ts';
 import vacancyFallbackImage from './assets/vacancy-fallback.jpg';
 
 const baselineAssumptions = loadBaselineAssumptions();
@@ -535,42 +535,48 @@ function App() {
   const [newExpenseError, setNewExpenseError] = useState<string | null>(null);
   const [rentStepPercent, setRentStepPercent] = useState(5);
   const [interestStepBps, setInterestStepBps] = useState(5);
-  const [uploadStatus, setUploadStatus] = useState<string>('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setUploadStatus('Uploading...');
-    try {
-      const result = await uploadProjectScreenshot(file);
-      setOcrResult(result);
-      setUploadStatus('Successfully uploaded');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      setUploadStatus(`Error: ${message}`);
-    }
-  };
-
-  /*
-  const applyProjectOcrResults = (result: OcrResult) => {
-    // TODO: Implement goal seek or display results to user
-    console.log('OCR Result:', result);
-  };
-  */
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
+  const [metricsOverride, setMetricsOverride] = useState<Partial<FinanceMetrics> | null>(null);
 
   const brokerFeeSliderMax = Math.max(assumptions.brokerFee || 0, 250_000);
   const contingencySliderMax = Math.max((assumptions.contingencyPct ?? 0) * 100, 20);
 
-  const metrics = useMemo(() => calculateMetrics(assumptions), [assumptions]);
+  const metrics = useMemo(() => {
+    const calculated = calculateMetrics(assumptions);
+    if (metricsOverride) {
+      return { ...calculated, ...metricsOverride };
+    }
+    return calculated;
+  }, [assumptions, metricsOverride]);
+
+  // Clear override when assumptions change
+  useEffect(() => {
+    if (metricsOverride) {
+      setMetricsOverride(null);
+    }
+  }, [assumptions]);
+
+  const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadStatus('scanning');
+    try {
+      const result: OcrResult = await uploadProjectScreenshot(file);
+      setMetricsOverride({
+        cashFlow: result.cash_flow_after_debt,
+        cashOnCash: result.cash_on_cash,
+        dscr: result.dscr,
+      });
+      setUploadStatus('success');
+      setTimeout(() => setUploadStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setUploadStatus('error');
+      setTimeout(() => setUploadStatus('idle'), 3000);
+    }
+  };
+
   const { waterfallData, waterfallDomain } = useMemo(() => {
     const data: CashFlowBar[] = [
       { name: 'Gross Rent', value: metrics.grossRentAnnual, color: '#0f172a' },
@@ -1310,19 +1316,15 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
               <div className="baseline-chip">
                 Baseline NOI: {currencyFormatter.format(baselineMetrics.noi)}
               </div>
-              <div className="project-upload">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                />
-                <button type="button" className="upload-button" onClick={handleUploadClick}>
-                  Upload Project Details
-                </button>
-                {uploadStatus && <p className="upload-status">{uploadStatus}</p>}
-              </div>
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <label style={{ cursor: 'pointer', background: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '0.9rem', border: '1px solid #ccc' }}>
+                Upload Project
+                <input type="file" accept="image/*" onChange={handleFileSelect} style={{ display: 'none' }} />
+              </label>
+              <span style={{ fontSize: '0.8rem', color: uploadStatus === 'error' ? 'red' : uploadStatus === 'success' ? 'green' : '#666' }}>
+                {uploadStatus === 'scanning' ? 'Scanning...' : uploadStatus === 'success' ? 'Success' : uploadStatus === 'error' ? 'Error' : ''}
+              </span>
             </div>
           </div>
         </header>
@@ -2027,7 +2029,7 @@ const vacancySummaryStyle = useMemo<CSSProperties | undefined>(() => {
         </div>
         </section>
       </div>
-      <MaggiSidebar locationHint={maggiMetadata.location} metadata={maggiMetadata} ocrResult={ocrResult} />
+      <MaggiSidebar locationHint={maggiMetadata.location} metadata={maggiMetadata} />
     </>
   );
 }

@@ -6,9 +6,8 @@ import { randomUUID } from 'node:crypto';
 import zlib from 'node:zlib';
 import unzipper from 'unzipper';
 import type { File as ZipFileEntry } from 'unzipper';
-import Busboy from 'busboy';
 import { createScenarioStore } from './scenarioStore.ts';
-import { chatCompletion, type ChatMessage } from './llmClient.ts';
+import { chatCompletion, performOcr, type ChatMessage } from './llmClient.ts';
 
 const PORT = Number(process.env.PORT ?? 4001);
 const store = createScenarioStore();
@@ -1004,20 +1003,44 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
     return;
   }
 
-    const isMaggiChatRoute = requestUrl.startsWith('/api/maggi/chat') || requestUrl.startsWith('/api/marvin/chat');
-    if (isMaggiChatRoute) {
-      if (method !== 'POST') {
-        sendJson(res, 405, { message: 'Method not allowed' });
+  if (requestUrl.startsWith('/api/ocr/parse')) {
+    if (method !== 'POST') {
+      sendJson(res, 405, { message: 'Method not allowed' });
+      return;
+    }
+    try {
+      const body = (await parseRequestBody(req)) as { image?: string };
+      const { image } = body;
+      if (!image || typeof image !== 'string' || !image.startsWith('data:image/')) {
+        sendJson(res, 400, { message: 'A valid base64 image string is required.' });
         return;
       }
-  
-      try {
-        const body = (await parseRequestBody(req)) as MaggiChatRequestBody;
-        const message = typeof body.message === 'string' ? body.message.trim() : '';
-        if (!message) {
-          sendJson(res, 400, { message: 'message is required' });
-          return;
-        }
+
+      const ocrResult = await performOcr(image);
+      const jsonData = JSON.parse(ocrResult);
+      sendJson(res, 200, jsonData);
+    } catch (error) {
+      console.error('OCR error:', error);
+      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+      sendJson(res, 500, { message: 'Failed to process the proforma.', details: message });
+    }
+    return;
+  }
+
+  const isMaggiChatRoute = requestUrl.startsWith('/api/maggi/chat') || requestUrl.startsWith('/api/marvin/chat');
+  if (isMaggiChatRoute) {
+    if (method !== 'POST') {
+      sendJson(res, 405, { message: 'Method not allowed' });
+      return;
+    }
+
+    try {
+      const body = (await parseRequestBody(req)) as MaggiChatRequestBody;
+      const message = typeof body.message === 'string' ? body.message.trim() : '';
+      if (!message) {
+        sendJson(res, 400, { message: 'message is required' });
+        return;
+      }
   
         const metadata = normalizeMaggiMetadata(body.metadata);
         const providedConversationId =
@@ -1088,65 +1111,7 @@ export const handleHttpRequest = async (req: http.IncomingMessage, res: http.Ser
       }
       return;
     }
-  
-    if (requestUrl.startsWith('/api/ocr/parse')) {
-      if (method !== 'POST') {
-        sendJson(res, 405, { message: 'Method not allowed' });
-        return;
-      }
-      const busboy = Busboy({ headers: req.headers });
-      let fileBuffer: Buffer | null = null;
-  
-      busboy.on('file', (_fieldName: string, fileStream: NodeJS.ReadableStream) => {
-        const chunks: Buffer[] = [];
-        fileStream.on('data', (chunk: Buffer) => chunks.push(chunk));
-        fileStream.on('end', () => {
-          fileBuffer = Buffer.concat(chunks);
-        });
-      });
-  
-      busboy.on('finish', async () => {
-        if (!fileBuffer) {
-          sendJson(res, 400, { message: 'No file uploaded' });
-          return;
-        }
-  
-        const base64Image = fileBuffer.toString('base64');
-        const ocrPrompt = `You are an expert real estate analyst. Read the provided real estate proforma screenshot and return a JSON object with keys "cash_flow_after_debt", "cash_on_cash", and "dscr". Use the "Year 1" column where applicable. Sanitize the values to be valid numbers (e.g., remove currency symbols, commas, and percentage signs). The final JSON should only contain the keys specified.`;
-  
-        try {
-          const visionModel = process.env.OPENROUTER_VISION_MODEL ?? 'anthropic/claude-3-haiku';
-          const visionBaseUrl = process.env.OPENROUTER_VISION_BASE_URL;
-  
-                  const response = await chatCompletion(
-                    [
-                      {
-                        role: 'user',
-                        content: [
-                          { type: 'text', text: ocrPrompt },
-                          {
-                            type: 'image_url',
-                            image_url: {
-                              url: `data:image/png;base64,${base64Image}`,
-                            },
-                          },
-                        ],
-                      },
-                    ],
-                    { model: visionModel,
-                     baseURL: visionBaseUrl }
-                  );  
-          const jsonResponse = JSON.parse(response);
-          sendJson(res, 200, jsonResponse);
-        } catch (error) {
-          console.error('OCR request failed:', error);
-          sendJson(res, 500, { message: 'Failed to process image with vision model.' });
-        }
-      });
-  
-      req.pipe(busboy);
-      return;
-    }
+
     if (requestUrl.startsWith('/api/scenarios')) {
     const url = new URL(requestUrl, `http://${req.headers.host ?? 'localhost'}`);
     if (method === 'GET' && url.pathname === '/api/scenarios') {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import type { OcrResult } from '../services/projectOcr.ts';
+import type { OcrResult } from '../services/ocrService';
 import './MaggiSidebar.css';
 import maggiIcon from '../../maggi.png';
 import maggiButtonImage from '../../maggib.png';
