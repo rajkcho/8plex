@@ -658,27 +658,66 @@ function App() {
 
         // Unit Mix
         if (result.unit_mix && Array.isArray(result.unit_mix) && result.unit_mix.length > 0) {
-          updates.unitMix = result.unit_mix!.map((u) => ({
-            name: u.name || 'Unit',
-            units: u.count || 1,
-            rent: u.monthly_rent || 0,
-            bedrooms: u.bedrooms || 1,
-            usage: u.usage || 'Residential',
-          }));
+          // Filter out non-residential usage if it sneaks in (e.g., Parking)
+          const residentialUnits = result.unit_mix.filter(u => 
+            !u.usage || 
+            (!u.usage.toLowerCase().includes('parking') && !u.usage.toLowerCase().includes('storage'))
+          );
+          
+          if (residentialUnits.length > 0) {
+             updates.unitMix = residentialUnits.map((u) => ({
+              name: u.name || 'Unit',
+              units: u.count || 1,
+              rent: u.monthly_rent || 0,
+              bedrooms: u.bedrooms || 1,
+              usage: 'Residential',
+            }));
+          }
         }
         
-        // Pet Income
+        // Pet Income & Parking Income
+        let updatedOtherIncome = [...prev.otherIncomeItems];
+        let incomeChanged = false;
+
         if (result.pet_income_details && typeof result.pet_income_details.count === 'number') {
-           const updatedOtherIncome = prev.otherIncomeItems.map(item => {
-               if (item.name.toLowerCase().includes('pet')) {
-                   return { 
-                       ...item, 
-                       units: result.pet_income_details!.count,
-                       monthlyAmount: result.pet_income_details!.fee ?? item.monthlyAmount
-                   };
-               }
-               return item;
-           });
+            const existingPetIndex = updatedOtherIncome.findIndex(item => item.name.toLowerCase().includes('pet'));
+            if (existingPetIndex !== -1) {
+                updatedOtherIncome[existingPetIndex] = {
+                    ...updatedOtherIncome[existingPetIndex],
+                    units: result.pet_income_details!.count,
+                    monthlyAmount: result.pet_income_details!.fee ?? updatedOtherIncome[existingPetIndex].monthlyAmount
+                };
+            } else {
+                updatedOtherIncome.push({
+                    name: 'Pet Income',
+                    units: result.pet_income_details!.count,
+                    usage: 1,
+                    monthlyAmount: result.pet_income_details!.fee || 0
+                });
+            }
+            incomeChanged = true;
+        }
+
+        if (result.parking_income_details && typeof result.parking_income_details.count === 'number') {
+            const existingParkingIndex = updatedOtherIncome.findIndex(item => item.name.toLowerCase().includes('parking'));
+            if (existingParkingIndex !== -1) {
+                 updatedOtherIncome[existingParkingIndex] = {
+                    ...updatedOtherIncome[existingParkingIndex],
+                    units: result.parking_income_details!.count,
+                    monthlyAmount: result.parking_income_details!.fee ?? updatedOtherIncome[existingParkingIndex].monthlyAmount
+                };
+            } else {
+                 updatedOtherIncome.push({
+                    name: 'Parking',
+                    units: result.parking_income_details!.count,
+                    usage: 1,
+                    monthlyAmount: result.parking_income_details!.fee || 0
+                });
+            }
+            incomeChanged = true;
+        }
+
+        if (incomeChanged) {
            updates.otherIncomeItems = updatedOtherIncome;
         }
         

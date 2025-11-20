@@ -72,7 +72,7 @@ export const performOcr = async (imageBase64: string): Promise<string> => {
     throw new Error('OPENROUTER_API_KEY is not configured');
   }
 
-  const model = process.env.OPENROUTER_VISION_MODEL ?? 'qwen/qwen-2-vl-72b-instruct';
+  const model = process.env.OPENROUTER_VISION_MODEL ?? 'openai/gpt-4o-mini';
   const baseUrl = process.env.OPENROUTER_BASE_URL ?? OPENROUTER_DEFAULT_BASE_URL;
   const endpoint = `${normalizeBaseUrl(baseUrl)}/chat/completions`;
 
@@ -83,7 +83,7 @@ export const performOcr = async (imageBase64: string): Promise<string> => {
         {
           type: 'text',
           text: `You are an expert financial analyst. From the attached real estate proforma image, extract the following details.
-Think step by step. Reason about which numbers correspond to the requested fields, especially for expenses.
+Think step by step. Be precise.
 
 Return a strictly valid JSON object with these keys:
 1. "cash_flow_after_debt": Year 1 Cash Flow After Debt Service (numeric).
@@ -106,18 +106,18 @@ Return a strictly valid JSON object with these keys:
       - "other_costs"
       - "replacement_reserve"
       (Value should be the numeric annual amount. If only a % is shown, calculate it based on Effective Gross Income if possible, otherwise return null).
-  12. "unit_mix": An array of unit types. For each type found:
-   - "name": Label (e.g., "1 Bedroom", "Bachelor").
-   - "count": Number of units (integer).
-   - "monthly_rent": Monthly rent per unit (numeric).
-   - "bedrooms": Number of bedrooms (integer, 0 for bachelor).
-   - "usage": Usage type (e.g., "Residential", "Commercial", "Parking"). Default to "Residential" if not specified.
+  12. "unit_mix": An array of RESIDENTIAL unit types only. Do NOT include parking or storage here. For each type found:
+    - "name": Label (e.g., "1 Bedroom", "Bachelor").
+    - "count": Number of units (integer).
+    - "monthly_rent": Monthly rent per unit (numeric).
+    - "bedrooms": Number of bedrooms (integer, 0 for bachelor).
+    - "usage": "Residential".
    
-   For "Pet" income, look for "Pet" in the income section. Extract:
-   - "pet_count": Number of pet units/fees.
-   - "pet_fee": Monthly fee per pet.
+   For "Pet" income, look for "Pet" in the income section.
+   For "Parking" income, look for "Parking", "Garage", or "Stall".
    
 13. "pet_income_details": { "count": integer, "fee": numeric } if found.
+14. "parking_income_details": { "count": integer, "fee": numeric, "total_monthly": numeric } if found.
 
 Sanitize all values. Remove currency symbols, commas, and percentage signs. Ensure decimals are used for percentages. If a value is not found, use null (or 0 for broker_fee).`,
         },
