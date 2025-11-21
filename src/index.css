@@ -1,11 +1,12 @@
 :root {
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.6;
-  font-weight: 400;
-  color: #0f172a;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  background-color: #eef2ff;
+  --color-primary: #0061df;
+  --color-primary-hover: #004bb3;
+  --color-text: #2a2e33;
+  --color-text-light: #6b7780;
+  --color-bg: #ffffff;
+  --color-bg-alt: #f9f9fb;
+  --color-border: #e6e6e6;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 * {
@@ -14,12 +15,24 @@
 
 body {
   margin: 0;
-  background-color: #eef2ff;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
 }
 
-input,
-button,
-textarea,
-select {
+h1, h2, h3, h4, h5, h6 {
+  color: #0f172a; /* Keep dark slate for headings for contrast */
+  letter-spacing: -0.02em;
+  margin-top: 0;
+}
+
+input, button, textarea, select {
   font: inherit;
 }
+
+button {
+  cursor: pointer;
+}
+
